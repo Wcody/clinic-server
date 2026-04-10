@@ -1,0 +1,110 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  servlet:
+    multipart:
+      max-request-size: 100MB
+      max-file-size: 100MB
+  datasource:
+    #数据库名称
+    name: db_ams_server
+    url: jdbc:mysql://localhost:3388/db_ams?serverTimezone=Asia/Shanghai&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8 #url
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  web:
+    resources:
+      add-mappings: true
+  application:
+    name: ams.server
+  thymeleaf:
+    check-template: false
+    check-template-location: false
+    cache: false
+  mail:
+    host: smtp.qq.com
+    username: 123
+    password: 123
+    default-encoding: utf-8
+  data:
+    # Redis配置
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      timeout: 3000
+      password: 123@abc
+  rabbitmq:
+    host: 127.0.0.1
+    port: 56721
+    username: admin
+    password: 123@abc
+    virtual-host: /
+
+#token
+jwt:
+  secret: secret.www.baqi.tech.secret
+  expirationTime: 72000
+  issuer: issuer.www.baqi.tech.issuer
+  header: Authorization
+  tokenHead: Bearer
+
+##baqi配置
+baqi:
+  security:
+    # 需要认证前缀，其它放行
+    auth-prefix-arr: /ams/**,/bms/**
+  redis:
+    prefix:
+      users: unknown
+
+## MQTT##
+#  mqtt:
+#  host: tcp://www.hi8d.vip:1883
+#  userName: beco
+#  passWord: 369852147
+#  qos: 1
+#  clientId: CrsServer
+#  timeout: 10
+#  keepalive: 20
+#  topic1: /dsyn/u/11223344/#
+
+# Elasticsearch配置
+elasticsearch:
+  host: localhost
+  port: 9200
+  username: elastic
+  password: MgNl75aQDNUiaJ3DXZD5
+
+#解决返回BODY中文乱码问题
+server:
+  port: 8800
+  servlet:
+    context-path: /
+    encoding:
+      charset: utf-8
+      enabled: true
+      force: true
+  tomcat:
+    uri-encoding: UTF-8
+# 日志配置
+# 名称不能为logback.xml或者logback-spring.xml否则会被加载两次
+logging:
+  config: classpath:logback-common.xml
+  file:
+    path: ./.clinic/logs
+
+# 配置Mybatis-Plus
+mybatis-plus:
+  global-config:
+    db-config:
+      # 全局逻辑删除字段名
+      logic-delete-field: deleted
+      # 逻辑已删除值
+      logic-delete-value: 1
+      # 逻辑未删除值
+      logic-not-delete-value: 0
+  configuration:
+    # 输出SQL语句，生成环境关闭
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    #开启下划线转驼峰
+    map-underscore-to-camel-case: false

@@ -1,0 +1,22 @@
+<!--
+  ~ 版权声明 Copyright (c) 2024。
+  ~ 版权所有者： [九维无纸化病案管理系统]
+  ~ 首创日期： 2024年6月14日
+  -->
+
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+    <title>抱歉，出错啦！</title>
+</head>
+<body>
+<div style="text-align: center;">
+    <h1 style="color: red;">抱歉，出错啦！</h1>
+    <h2 style="color: red;" th:text="'错误代码：'+${errorStatus}"></h2>
+    <h2 style="color: red;" th:text="'错误信息：'+${errorMessage}"></h2>
+    <h2 style="color: red;" th:text="'异常类：'+${errorException}"></h2>
+    <h2 style="color: red;" th:text="'请求URL：'+${errorUrl}"></h2>
+</div>
+</body>
+</html>

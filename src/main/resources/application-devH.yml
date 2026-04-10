@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    #数据库名称
+    name: db_ams_server
+    url: jdbc:mysql://192.168.44.200:3387/db_ams?serverTimezone=Asia/Shanghai&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8 #url
+  application:
+    name: ams.server
+
+#baqi配置
+baqi:
+  security:
+    # 需要进入security管控的前缀
+    auth-prefix-arr: /ams/**
+  redis:
+    prefix:
+      users: ams
+
+server:
+  port: 8700
