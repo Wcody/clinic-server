@@ -6,7 +6,6 @@
 package com.qkplm.clinic.clinicserver.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.qkplm.clinic.libcommon.entity.BQIdBaseEntity;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,36 +13,38 @@ import java.io.Serial;
 
 /**
 * @author Wcke
-* @description <p>系统参数组表 实体类</p>
+* @description <p>VIEW 实体类</p>
 * @datetime 2026-4-11 9:28
 */
 @Getter
 @Setter
-@TableName(value = "bq_param_group", autoResultMap = true)
-public class BqParamGroupEntity extends BQIdBaseEntity {
+@TableName(value = "view_prescription_full", autoResultMap = true)
+public class ViewPrescriptionFullEntity {
 
     /**
-     * 父ID
+     * 基本方ID
      */
-    private Integer pid;
+    private Long id;
 
     /**
-     * 组名称
+     * 方剂名称
      */
-    private String name;
+    private String prescName;
 
     /**
-     * 组说明
+     * 出处(如《伤寒论》)
      */
-    private String remark;
+    private String source;
 
     /**
-     * 顺序值
+     * 功效
      */
-    private Integer seq;
+    private String efficacy;
 
     /**
-     * [B]启用禁用
+     * 主治
      */
-    private Boolean status;
+    private String indications;
+
+    private String ingredients;
 }

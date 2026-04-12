@@ -6,6 +6,8 @@
 
 package com.qkplm.clinic.clinicserver.service;
 
+import com.qkplm.clinic.clinicserver.dtos.DiagnosisDictListDto;
+import com.qkplm.clinic.clinicserver.dtos.DiseaseDetailNewDto;
 import com.qkplm.clinic.clinicserver.entity.TbDiagnosisDictEntity;
 import com.qkplm.clinic.libcommon.mybatis.base.IBaqiService;
 
@@ -16,4 +18,16 @@ import com.qkplm.clinic.libcommon.mybatis.base.IBaqiService;
 */
 public interface ITbDiagnosisDictService extends IBaqiService<TbDiagnosisDictEntity> {
 
+    /**
+     * 获取疾病字典列表(包含疾病、首字母、专科)
+     * @return 疾病字典列表DTO
+     */
+    DiagnosisDictListDto getDictList();
+
+    /**
+     * 获取疾病详情(新格式)
+     * @param id 疾病ID
+     * @return 疾病详情DTO
+     */
+    DiseaseDetailNewDto getDetail(Long id);
 }

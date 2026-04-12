@@ -1,7 +1,7 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月10日
+* 首创日期： 2026年4月11日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
@@ -16,7 +16,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>检查检验项目表 实体类</p>
-* @datetime 2026-4-10 18:51
+* @datetime 2026-4-11 9:28
 */
 @Getter
 @Setter

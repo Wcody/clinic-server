@@ -8,6 +8,8 @@ package com.qkplm.clinic.clinicserver.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RestController;
+import com.qkplm.clinic.clinicserver.dtos.DiagnosisDictListDto;
+import com.qkplm.clinic.clinicserver.dtos.DiseaseDetailNewDto;
 import com.qkplm.clinic.clinicserver.service.ITbDiagnosisDictService;
 import com.qkplm.clinic.clinicserver.entity.TbDiagnosisDictEntity;
 import com.qkplm.clinic.libcommon.annotation.BQAuthMark;
@@ -175,5 +177,29 @@ public class TbDiagnosisDictController {
     public Page<TbDiagnosisDictEntity> page(BQSearchParamsGet<TbDiagnosisDictEntity> paramsGet) {
         BQSearchParams<TbDiagnosisDictEntity> params = paramsGet.toSearchParams();
         return diagnosisDictService.page(params.toPage(), params.toWrapper());
+    }
+
+    /**
+    * 获取疾病字典列表(包含疾病、首字母、专科)
+    */
+    @BQAuthMark(tag = TAG_NAME, buttons = {}, needGrant = false)
+    @BQLogMark(module = MODULE_NAME, operation = "获取疾病字典列表")
+    @RequestMapping(value = "/getDictList", method = RequestMethod.GET)
+    public DiagnosisDictListDto getDictList() {
+        return diagnosisDictService.getDictList();
+    }
+
+    /**
+    * 获取疾病详情(新格式)
+    */
+    @BQAuthMark(tag = TAG_NAME, buttons = {}, needGrant = false)
+    @BQLogMark(module = MODULE_NAME, operation = "获取疾病详情")
+    @RequestMapping(value = "/getDetail/{id}", method = RequestMethod.GET)
+    public DiseaseDetailNewDto getDetail(@PathVariable Long id) {
+        DiseaseDetailNewDto detail = diagnosisDictService.getDetail(id);
+        if (detail == null) {
+            throw new BQApiException("获取失败，疾病可能不存在");
+        }
+        return detail;
     }
 }

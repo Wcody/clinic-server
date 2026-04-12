@@ -8,7 +8,7 @@ spring:
   datasource:
     #数据库名称
     name: db_ams_server
-    url: jdbc:mysql://localhost:3388/db_ams?serverTimezone=Asia/Shanghai&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8 #url
+    url: jdbc:mysql://localhost:3388/db_clinic?serverTimezone=Asia/Shanghai&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8 #url
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver

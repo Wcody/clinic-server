@@ -2,7 +2,7 @@ spring:
   datasource:
     #数据库名称
     name: db_ams_server
-    url: jdbc:mysql://192.168.44.200:3387/db_ams?serverTimezone=Asia/Shanghai&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8 #url
+    url: jdbc:mysql://192.168.44.200:3387/db_clinic?serverTimezone=Asia/Shanghai&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8 #url
   application:
     name: ams.server
 
