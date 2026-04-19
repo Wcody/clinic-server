@@ -6,13 +6,17 @@
 
 package com.qkplm.clinic.clinicserver.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import com.qkplm.clinic.libcommon.utils.BQIOUtils;
+import com.qkplm.clinic.libcommon.utils.BQJacksonUtils;
 
 /**
  * @author: Wcke
@@ -49,5 +53,18 @@ public class BQWebConfig implements WebMvcConfigurer {
         log.info("staticPath:{}", staticPath);
         registry.addResourceHandler("/**")
                 .addResourceLocations(staticPath);
+    }
+
+    /**
+     * 配置Jackson时间序列化/反序列化器
+     * 支持ISO 8601格式（如：2026-04-13T06:41:43.454Z）
+     */
+    @Bean
+    public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        // 使用BQJacksonUtils中已配置好的ObjectMapper，包含忽略未知属性等全局配置
+        ObjectMapper objectMapper = BQJacksonUtils.getMapper();
+        converter.setObjectMapper(objectMapper);
+        return converter;
     }
 }

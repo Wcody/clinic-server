@@ -12,7 +12,9 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -29,9 +31,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.Objects;
 
 /**
@@ -68,8 +74,44 @@ public class BQJacksonUtils {
         mapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING);
         //增加日期支持
         JavaTimeModule javaTimeModule = new JavaTimeModule();
-        javaTimeModule.addSerializer(LocalDateTime.class,new LocalDateTimeSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-        javaTimeModule.addDeserializer(LocalDateTime.class,new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        
+        // LocalDateTime 序列化器（使用标准格式）
+        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        
+        // LocalDateTime 反序列化器（支持多种格式，包括 ISO 8601）
+        javaTimeModule.addDeserializer(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
+            @Override
+            public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                String dateStr = p.getText();
+                if (dateStr == null || dateStr.isEmpty()) {
+                    return null;
+                }
+                
+                try {
+                    // 尝试解析 ISO 8601 格式（带时区，如 2026-04-13T06:41:43.454Z）
+                    if (dateStr.contains("T") && (dateStr.endsWith("Z") || dateStr.contains("+") || dateStr.lastIndexOf("-") > 10)) {
+                        Instant instant = Instant.parse(dateStr);
+                        return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+                    }
+                    // 尝试解析标准格式 yyyy-MM-dd HH:mm:ss
+                    else if (dateStr.contains(" ")) {
+                        return LocalDateTime.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    }
+                    // 尝试解析 ISO 本地格式 yyyy-MM-ddTHH:mm:ss
+                    else if (dateStr.contains("T")) {
+                        return LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    }
+                    // 默认尝试直接解析
+                    else {
+                        return LocalDateTime.parse(dateStr);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to parse date string: {}", dateStr, e);
+                    throw new IOException("Failed to parse date: " + dateStr, e);
+                }
+            }
+        });
+        
         javaTimeModule.addSerializer(LocalDate.class,new LocalDateSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         javaTimeModule.addDeserializer(LocalDate.class,new LocalDateDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         mapper.registerModule(javaTimeModule);

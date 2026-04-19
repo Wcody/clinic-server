@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qkplm.clinic.clinicserver.mapper.FinanceStatsMapper">
+
+    <!-- 公共 WHERE 条件片段（bq_bill_not_charged 别名 nc） -->
+    <sql id="whereCondition">
+        WHERE nc.deleted = 0
+        <if test="typeString != null and typeString != ''">
+            AND nc.typeString = #{typeString}
+        </if>
+        <if test="startTime != null">
+            AND nc.visitTime &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND nc.visitTime &lt;= #{endTime}
+        </if>
+    </sql>
+
+    <!-- 退费子查询（按日） -->
+    <sql id="refundByDay">
+        (SELECT COALESCE(SUM(r.returnAmount), 0)
+         FROM bq_bill_refund r
+         WHERE r.deleted = 0
+           AND DATE_FORMAT(r.returnTime, '%Y-%m-%d') = DATE_FORMAT(nc.visitTime, '%Y-%m-%d'))
+    </sql>
+
+    <!-- 退费子查询（按月） -->
+    <sql id="refundByMonth">
+        (SELECT COALESCE(SUM(r.returnAmount), 0)
+         FROM bq_bill_refund r
+         WHERE r.deleted = 0
+           AND DATE_FORMAT(r.returnTime, '%Y-%m') = DATE_FORMAT(nc.visitTime, '%Y-%m'))
+    </sql>
+
+    <!-- ============ 按天统计列表 ============ -->
+    <select id="selectStatsByDay" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(nc.visitTime, '%Y-%m-%d') AS periodDate,
+            nc.typeString,
+            COUNT(*)                               AS chargeCount,
+            COUNT(DISTINCT nc.patientName)         AS visitCount,
+            ROUND(COALESCE(SUM(nc.amount), 0), 2) AS totalAmount,
+            ROUND(COALESCE(SUM(nc.amount), 0), 2) AS chargeTotal,
+            ROUND(COALESCE(AVG(nc.amount),   0), 2) AS chargeAvg,
+            0                                      AS actualTotal,
+            0                                      AS actualAvg,
+            ROUND(COALESCE(SUM(nc.amount), 0), 2) AS notChargedTotal,
+            ROUND(COALESCE(AVG(nc.amount),  0), 2) AS notChargedAvg,
+            ROUND(
+                (SELECT COALESCE(SUM(r.returnAmount), 0)
+                 FROM bq_bill_refund r
+                 WHERE r.deleted = 0
+                   AND DATE_FORMAT(r.returnTime, '%Y-%m-%d') = DATE_FORMAT(MIN(nc.visitTime), '%Y-%m-%d'))
+            , 2) AS refundTotal,
+            0    AS refundAvg,
+            ROUND(COALESCE(SUM(nc.amount), 0) -
+                (SELECT COALESCE(SUM(r.returnAmount), 0)
+                 FROM bq_bill_refund r
+                 WHERE r.deleted = 0
+                   AND DATE_FORMAT(r.returnTime, '%Y-%m-%d') = DATE_FORMAT(MIN(nc.visitTime), '%Y-%m-%d'))
+            , 2) AS profitTotal,
+            0    AS profitAvg
+        FROM bq_bill_not_charged nc
+        <include refid="whereCondition"/>
+        GROUP BY DATE_FORMAT(nc.visitTime, '%Y-%m-%d'), nc.typeString
+        ORDER BY periodDate DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countStatsByDay" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM (
+            SELECT 1
+            FROM bq_bill_not_charged nc
+            <include refid="whereCondition"/>
+            GROUP BY DATE_FORMAT(nc.visitTime, '%Y-%m-%d'), nc.typeString
+        ) t
+    </select>
+
+    <!-- ============ 按月统计列表 ============ -->
+    <select id="selectStatsByMonth" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(nc.visitTime, '%Y-%m')     AS periodDate,
+            nc.typeString,
+            COUNT(*)                               AS chargeCount,
+            COUNT(DISTINCT nc.patientName)         AS visitCount,
+            ROUND(COALESCE(SUM(nc.amount), 0), 2) AS totalAmount,
+            ROUND(COALESCE(SUM(nc.amount), 0), 2) AS chargeTotal,
+            ROUND(COALESCE(AVG(nc.amount),   0), 2) AS chargeAvg,
+            0                                      AS actualTotal,
+            0                                      AS actualAvg,
+            ROUND(COALESCE(SUM(nc.amount), 0), 2) AS notChargedTotal,
+            ROUND(COALESCE(AVG(nc.amount),  0), 2) AS notChargedAvg,
+            ROUND(
+                (SELECT COALESCE(SUM(r.returnAmount), 0)
+                 FROM bq_bill_refund r
+                 WHERE r.deleted = 0
+                   AND DATE_FORMAT(r.returnTime, '%Y-%m') = DATE_FORMAT(MIN(nc.visitTime), '%Y-%m'))
+            , 2) AS refundTotal,
+            0    AS refundAvg,
+            ROUND(COALESCE(SUM(nc.amount), 0) -
+                (SELECT COALESCE(SUM(r.returnAmount), 0)
+                 FROM bq_bill_refund r
+                 WHERE r.deleted = 0
+                   AND DATE_FORMAT(r.returnTime, '%Y-%m') = DATE_FORMAT(MIN(nc.visitTime), '%Y-%m'))
+            , 2) AS profitTotal,
+            0    AS profitAvg
+        FROM bq_bill_not_charged nc
+        <include refid="whereCondition"/>
+        GROUP BY DATE_FORMAT(nc.visitTime, '%Y-%m'), nc.typeString
+        ORDER BY periodDate DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countStatsByMonth" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM (
+            SELECT 1
+            FROM bq_bill_not_charged nc
+            <include refid="whereCondition"/>
+            GROUP BY DATE_FORMAT(nc.visitTime, '%Y-%m'), nc.typeString
+        ) t
+    </select>
+
+    <!-- ============ 汇总卡片 ============ -->
+    <select id="selectSummary" resultType="java.util.Map">
+        SELECT
+            ROUND(COALESCE((
+                SELECT SUM(nc2.amount) FROM bq_bill_not_charged nc2
+                WHERE nc2.deleted = 0
+                <if test="typeString != null and typeString != ''">
+                    AND nc2.typeString = #{typeString}
+                </if>
+                <if test="startTime != null">
+                    AND nc2.visitTime &gt;= #{startTime}
+                </if>
+                <if test="endTime != null">
+                    AND nc2.visitTime &lt;= #{endTime}
+                </if>
+            ), 0), 2) AS totalAmount,
+            0 AS actualAmount,
+            ROUND(COALESCE((
+                SELECT SUM(r.returnAmount) FROM bq_bill_refund r
+                WHERE r.deleted = 0
+                <if test="startTime != null">
+                    AND r.returnTime &gt;= #{startTime}
+                </if>
+                <if test="endTime != null">
+                    AND r.returnTime &lt;= #{endTime}
+                </if>
+            ), 0), 2) AS refundAmount
+    </select>
+
+    <!-- ============ 折线图 - 按天 ============ -->
+    <select id="selectChartByDay" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(nc.visitTime, '%Y-%m-%d') AS periodDate,
+            ROUND(COALESCE(SUM(nc.amount), 0), 2) AS totalAmount
+        FROM bq_bill_not_charged nc
+        <include refid="whereCondition"/>
+        GROUP BY DATE_FORMAT(nc.visitTime, '%Y-%m-%d')
+        ORDER BY periodDate ASC
+    </select>
+
+    <!-- ============ 折线图 - 按月 ============ -->
+    <select id="selectChartByMonth" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(nc.visitTime, '%Y-%m')     AS periodDate,
+            ROUND(COALESCE(SUM(nc.amount), 0), 2) AS totalAmount
+        FROM bq_bill_not_charged nc
+        <include refid="whereCondition"/>
+        GROUP BY DATE_FORMAT(nc.visitTime, '%Y-%m')
+        ORDER BY periodDate ASC
+    </select>
+
+    <!-- ============ 收费类型列表 ============ -->
+    <select id="selectTypeStrings" resultType="java.lang.String">
+        SELECT DISTINCT typeString
+        FROM bq_bill_not_charged
+        WHERE deleted = 0
+          AND typeString IS NOT NULL
+          AND typeString != ''
+        ORDER BY typeString
+    </select>
+
+</mapper>

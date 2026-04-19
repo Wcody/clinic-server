@@ -1,12 +1,13 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月11日
+* 首创日期： 2026年4月19日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.qkplm.clinic.libcommon.entity.BQEidBaseEntity;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,7 +16,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>病案追踪 实体类</p>
-* @datetime 2026-4-11 9:28
+* @datetime 2026-4-19 19:15
 */
 @Getter
 @Setter
@@ -46,6 +47,11 @@ public class TbRecordTrackEntity extends BQEidBaseEntity {
      * 备注
      */
     private String remark;
+
+    /**
+     * 删除时间
+     */
+    private LocalDateTime deletedTime;
 
     /**
      * 跟踪类型0入库1护士2医生3终末4医生驳回5终末驳回

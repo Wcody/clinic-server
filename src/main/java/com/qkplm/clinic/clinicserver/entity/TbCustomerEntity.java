@@ -1,7 +1,7 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月11日
+* 首创日期： 2026年4月19日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
@@ -17,7 +17,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>使用系统的客户 实体类</p>
-* @datetime 2026-4-11 9:28
+* @datetime 2026-4-19 19:15
 */
 @Getter
 @Setter
@@ -103,6 +103,11 @@ public class TbCustomerEntity extends BQEidBaseEntity {
      * 最近登录时间
      */
     private LocalDateTime lastUpdatedTime;
+
+    /**
+     * 删除时间
+     */
+    private LocalDateTime deletedTime;
 
     /**
      * 授权类型，0临时授权（有时间限制，不是正式用户），1正式授权（有时间限制，是正式用户），2永久授权（无时间限制，是正式用户）

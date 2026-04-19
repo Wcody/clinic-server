@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fop version="1.0">
+  <renderers>
+    <renderer mime="application/pdf">
+      <fonts>
+        <!-- Windows 系统字体自动扫描，支持中文 -->
+        <directory recursive="true">C:/Windows/Fonts</directory>
+        <auto-detect/>
+      </fonts>
+    </renderer>
+  </renderers>
+</fop>

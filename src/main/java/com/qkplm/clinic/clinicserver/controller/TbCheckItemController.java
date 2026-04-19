@@ -1,7 +1,7 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月9日
+* 首创日期： 2026年4月18日
 */
 package com.qkplm.clinic.clinicserver.controller;
 
@@ -22,7 +22,7 @@ import java.util.Collection;
 /**
  * @author Wcke
  * @description <p>检查检验项目表 前端控制器</p>
- * @datetime 2026-4-9 11:43
+ * @datetime 2026-4-18 23:43
  */
 @RestController
 @RequestMapping("/ams/api/v1/check/item")

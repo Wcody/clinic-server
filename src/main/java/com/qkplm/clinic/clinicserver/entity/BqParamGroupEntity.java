@@ -1,12 +1,13 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月11日
+* 首创日期： 2026年4月19日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.qkplm.clinic.libcommon.entity.BQIdBaseEntity;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,7 +16,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>系统参数组表 实体类</p>
-* @datetime 2026-4-11 9:28
+* @datetime 2026-4-19 19:15
 */
 @Getter
 @Setter
@@ -46,4 +47,19 @@ public class BqParamGroupEntity extends BQIdBaseEntity {
      * [B]启用禁用
      */
     private Boolean status;
+
+    /**
+     * 行乐观锁
+     */
+    private Integer version;
+
+    /**
+     * [B]逻辑删除标记
+     */
+    private Boolean deleted;
+
+    /**
+     * 删除时间
+     */
+    private LocalDateTime deletedTime;
 }
