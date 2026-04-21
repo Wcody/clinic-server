@@ -9,13 +9,19 @@ package com.qkplm.clinic.clinicserver.mapper;
 import com.qkplm.clinic.clinicserver.entity.BqPrescriptionEntity;
 import com.qkplm.clinic.libcommon.mybatis.base.IBaqiMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 
 /**
-* @author Wcke
-* @description <p>处方主表 映射器</p>
-* @datetime 2026-4-18 0:54
-*/
+ * @author Wcke
+ * @description
+ *              <p>
+ *              处方主表 映射器
+ *              </p>
+ * @datetime 2026-4-18 0:54
+ */
 @Mapper
 public interface BqPrescriptionMapper extends IBaqiMapper<BqPrescriptionEntity> {
 
+    @Select("SELECT ifnull(max(prescNo),0) + 1 FROM bq_prescription where createdTime between #{startDate} and #{endDate}")
+    Integer getNextPrescNo(String startDate, String endDate);
 }

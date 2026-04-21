@@ -19,7 +19,7 @@
             r.orderTime,
             r.patient,
             r.gender,
-            r.ageFirst,
+            r.age,
             r.ageType,
             p.idCard,
             p.mobile,

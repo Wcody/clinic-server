@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qkplm.clinic.clinicserver.mapper.HomeDashboardMapper">
+
+    <!-- 今日挂号总量 -->
+    <select id="selectTodayRegistrationTotal" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM bq_registration
+        WHERE deleted = 0
+          AND orderTime >= #{dayStart}
+          AND orderTime &lt; #{dayEnd}
+    </select>
+
+    <!-- 诊所已接诊数量 -->
+    <select id="selectReceivedCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM bq_registration
+        WHERE deleted = 0
+          AND status = '已接诊'
+          AND orderTime >= #{dayStart}
+          AND orderTime &lt; #{dayEnd}
+    </select>
+
+    <!-- 诊所待接诊数量 -->
+    <select id="selectPendingCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM bq_registration
+        WHERE deleted = 0
+          AND status = '待接诊'
+          AND orderTime >= #{dayStart}
+          AND orderTime &lt; #{dayEnd}
+    </select>
+
+    <!-- 诊所今日收费总额（从挂号表统计totalPrice） -->
+    <select id="selectTodayFee" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(totalPrice), 0)
+        FROM bq_registration
+        WHERE deleted = 0
+          AND orderTime >= #{dayStart}
+          AND orderTime &lt; #{dayEnd}
+    </select>
+
+    <!-- 我的已接诊数量 -->
+    <select id="selectMyReceivedCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM bq_registration
+        WHERE deleted = 0
+          AND doctor = #{doctor}
+          AND status = '已接诊'
+          AND orderTime >= #{dayStart}
+          AND orderTime &lt; #{dayEnd}
+    </select>
+
+    <!-- 我的待接诊数量 -->
+    <select id="selectMyPendingCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM bq_registration
+        WHERE deleted = 0
+          AND doctor = #{doctor}
+          AND status = '待接诊'
+          AND orderTime >= #{dayStart}
+          AND orderTime &lt; #{dayEnd}
+    </select>
+
+    <!-- 我的今日收费总额 -->
+    <select id="selectMyTodayFee" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(totalPrice), 0)
+        FROM bq_registration
+        WHERE deleted = 0
+          AND doctor = #{doctor}
+          AND orderTime >= #{dayStart}
+          AND orderTime &lt; #{dayEnd}
+    </select>
+
+    <!-- 本周就诊趋势（按星期分组，星期天=1） -->
+    <select id="selectThisWeekVisitCount" resultType="java.util.Map">
+        SELECT DAYOFWEEK(orderTime) AS dayOfWeek, COUNT(*) AS count
+        FROM bq_registration
+        WHERE deleted = 0
+          AND orderTime >= #{weekStart}
+          AND orderTime &lt; #{weekEnd}
+        GROUP BY DAYOFWEEK(orderTime)
+        ORDER BY DAYOFWEEK(orderTime)
+    </select>
+
+    <!-- 上周就诊趋势（按星期分组） -->
+    <select id="selectLastWeekVisitCount" resultType="java.util.Map">
+        SELECT DAYOFWEEK(orderTime) AS dayOfWeek, COUNT(*) AS count
+        FROM bq_registration
+        WHERE deleted = 0
+          AND orderTime >= #{weekStart}
+          AND orderTime &lt; #{weekEnd}
+        GROUP BY DAYOFWEEK(orderTime)
+        ORDER BY DAYOFWEEK(orderTime)
+    </select>
+
+    <!-- 今日接诊数量排行 -->
+    <select id="selectVisitRank" resultType="java.util.Map">
+        SELECT doctor, department, COUNT(*) AS count
+        FROM bq_registration
+        WHERE deleted = 0
+          AND orderTime >= #{dayStart}
+          AND orderTime &lt; #{dayEnd}
+        GROUP BY doctor, department
+        ORDER BY count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 今日收费金额排行（从挂号表统计totalPrice） -->
+    <select id="selectFeeRank" resultType="java.util.Map">
+        SELECT doctor, department, SUM(totalPrice) AS fee
+        FROM bq_registration
+        WHERE deleted = 0
+          AND orderTime >= #{dayStart}
+          AND orderTime &lt; #{dayEnd}
+        GROUP BY doctor, department
+        ORDER BY fee DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 最新动态 -->
+    <select id="selectRecentEvents" resultType="java.util.Map">
+        SELECT doctor, patient, department, orderTime
+        FROM bq_registration
+        WHERE deleted = 0
+        ORDER BY orderTime DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qkplm.clinic.clinicserver.mapper.ProjectSalesStatsMapper">
+
+    <!-- ============ 项目销售明细列表 ============ -->
+    <select id="selectProjectSalesDetail" resultType="java.util.Map">
+        SELECT
+            bn.visitTime              AS saleTime,
+            bn.patientName            AS patientName,
+            bn.gender                 AS gender,
+            bn.doctor                 AS doctor,
+            COALESCE(
+                (SELECT ti.name FROM bq_treatment_item ti WHERE ti.projectCode = SUBSTRING_INDEX(SUBSTRING_INDEX(bn.typeString, ' ', 1), ' ', -1) AND ti.deleted = 0 LIMIT 1),
+                (SELECT ei.name FROM bq_examine_item ei WHERE ei.projectCode = SUBSTRING_INDEX(SUBSTRING_INDEX(bn.typeString, ' ', 1), ' ', -1) AND ei.deleted = 0 LIMIT 1),
+                bn.typeString
+            ) AS projectName,
+            bn.typeString             AS projectType,
+            bn.amount                 AS unitPrice,
+            1                         AS quantity,
+            bn.amount                 AS totalAmount,
+            '已完成'                   AS chargeStatus
+        FROM bq_bill_not_charged bn
+        WHERE bn.deleted = 0
+          AND bn.typeString IS NOT NULL
+          AND bn.typeString != ''
+          AND bn.typeString NOT LIKE '%西药%'
+          AND bn.typeString NOT LIKE '%中草药%'
+          AND bn.typeString NOT LIKE '%中成药%'
+        <if test="projectName != null and projectName != ''">
+            AND bn.typeString LIKE CONCAT('%', #{projectName}, '%')
+        </if>
+        <if test="doctor != null and doctor != ''">
+            AND bn.doctor = #{doctor}
+        </if>
+        <if test="startTime != null">
+            AND bn.visitTime &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND bn.visitTime &lt;= #{endTime}
+        </if>
+        ORDER BY bn.visitTime DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countProjectSalesDetail" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM bq_bill_not_charged bn
+        WHERE bn.deleted = 0
+          AND bn.typeString IS NOT NULL
+          AND bn.typeString != ''
+          AND bn.typeString NOT LIKE '%西药%'
+          AND bn.typeString NOT LIKE '%中草药%'
+          AND bn.typeString NOT LIKE '%中成药%'
+        <if test="projectName != null and projectName != ''">
+            AND bn.typeString LIKE CONCAT('%', #{projectName}, '%')
+        </if>
+        <if test="doctor != null and doctor != ''">
+            AND bn.doctor = #{doctor}
+        </if>
+        <if test="startTime != null">
+            AND bn.visitTime &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND bn.visitTime &lt;= #{endTime}
+        </if>
+    </select>
+
+    <!-- ============ 项目销售统计（按项目聚合） ============ -->
+    <select id="selectProjectSalesStat" resultType="java.util.Map">
+        SELECT
+            bn.typeString             AS projectName,
+            COUNT(*)                  AS saleTimes,
+            SUM(1)                    AS totalQuantity,
+            ROUND(COALESCE(SUM(bn.amount), 0), 2) AS totalAmount
+        FROM bq_bill_not_charged bn
+        WHERE bn.deleted = 0
+          AND bn.typeString IS NOT NULL
+          AND bn.typeString != ''
+          AND bn.typeString NOT LIKE '%西药%'
+          AND bn.typeString NOT LIKE '%中草药%'
+          AND bn.typeString NOT LIKE '%中成药%'
+        <if test="projectName != null and projectName != ''">
+            AND bn.typeString LIKE CONCAT('%', #{projectName}, '%')
+        </if>
+        <if test="startTime != null">
+            AND bn.visitTime &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND bn.visitTime &lt;= #{endTime}
+        </if>
+        GROUP BY bn.typeString
+        ORDER BY totalAmount DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countProjectSalesStat" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM (
+            SELECT 1
+            FROM bq_bill_not_charged bn
+            WHERE bn.deleted = 0
+              AND bn.typeString IS NOT NULL
+              AND bn.typeString != ''
+              AND bn.typeString NOT LIKE '%西药%'
+              AND bn.typeString NOT LIKE '%中草药%'
+              AND bn.typeString NOT LIKE '%中成药%'
+            <if test="projectName != null and projectName != ''">
+                AND bn.typeString LIKE CONCAT('%', #{projectName}, '%')
+            </if>
+            <if test="startTime != null">
+                AND bn.visitTime &gt;= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND bn.visitTime &lt;= #{endTime}
+            </if>
+            GROUP BY bn.typeString
+        ) t
+    </select>
+
+    <!-- ============ 项目销售统计汇总 ============ -->
+    <select id="selectProjectSalesStatSummary" resultType="java.util.Map">
+        SELECT
+            COUNT(DISTINCT bn.typeString)                   AS projectTypeCount,
+            SUM(1)                                          AS totalTimes,
+            ROUND(COALESCE(SUM(bn.amount), 0), 2)          AS totalAmount
+        FROM bq_bill_not_charged bn
+        WHERE bn.deleted = 0
+          AND bn.typeString IS NOT NULL
+          AND bn.typeString != ''
+          AND bn.typeString NOT LIKE '%西药%'
+          AND bn.typeString NOT LIKE '%中草药%'
+          AND bn.typeString NOT LIKE '%中成药%'
+        <if test="projectName != null and projectName != ''">
+            AND bn.typeString LIKE CONCAT('%', #{projectName}, '%')
+        </if>
+        <if test="startTime != null">
+            AND bn.visitTime &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND bn.visitTime &lt;= #{endTime}
+        </if>
+    </select>
+
+</mapper>

@@ -1,13 +1,12 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月19日
+* 首创日期： 2026年4月22日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.qkplm.clinic.libcommon.entity.BQIdBaseEntity;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,7 +16,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>处方模板明细表 实体类</p>
-* @datetime 2026-4-19 19:15
+* @datetime 2026-4-22 2:10
 */
 @Getter
 @Setter
@@ -40,17 +39,17 @@ public class BqPrescriptionTemplateDetailEntity extends BQIdBaseEntity {
     private String drugName;
 
     /**
-     * 数量
+     * 计价总量
      */
-    private BigDecimal quantity;
+    private String quantity;
 
     /**
-     * 单位ID
+     * 计价单位ID
      */
     private Integer quantityUnit;
 
     /**
-     * 煎煮类型ID
+     * 煎煮类型ID，中药才用到
      */
     private Integer cookingType;
 
@@ -67,7 +66,7 @@ public class BqPrescriptionTemplateDetailEntity extends BQIdBaseEntity {
     /**
      * 单次用量
      */
-    private BigDecimal singleUsageAmount;
+    private String singleUsageAmount;
 
     /**
      * 单次用量单位ID
@@ -113,4 +112,14 @@ public class BqPrescriptionTemplateDetailEntity extends BQIdBaseEntity {
      * 删除时间
      */
     private LocalDateTime deletedTime;
+
+    /**
+     * 用法类型ID
+     */
+    private Integer usageType;
+
+    /**
+     * 医嘱/嘱托
+     */
+    private String recommendation;
 }

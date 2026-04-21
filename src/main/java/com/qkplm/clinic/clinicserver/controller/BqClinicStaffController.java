@@ -5,6 +5,7 @@
 */
 package com.qkplm.clinic.clinicserver.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RestController;
@@ -167,13 +168,16 @@ public class BqClinicStaffController {
     }
 
     /**
-    * 分页查询，orders可以排序，filters可以过滤
+    * 获取医生列表（仅启用的）
     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
-    @BQLogMark(module = MODULE_NAME, operation = "分页查询")
-    @RequestMapping(value = "/page", method = RequestMethod.GET)
-    public Page<BqClinicStaffEntity> page(BQSearchParamsGet<BqClinicStaffEntity> paramsGet) {
-        BQSearchParams<BqClinicStaffEntity> params = paramsGet.toSearchParams();
-        return clinicStaffService.page(params.toPage(), params.toWrapper());
+    @BQLogMark(module = MODULE_NAME, operation = "医生列表查询")
+    @RequestMapping(value = "/listDoctors", method = RequestMethod.GET)
+    public Iterable<BqClinicStaffEntity> listDoctors() {
+        LambdaQueryWrapper<BqClinicStaffEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(BqClinicStaffEntity::getStatus, "启用")
+               .eq(BqClinicStaffEntity::getDeleted, false)
+               .orderByAsc(BqClinicStaffEntity::getName);
+        return clinicStaffService.list(wrapper);
     }
 }

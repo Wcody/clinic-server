@@ -176,4 +176,15 @@ public class BqDrugController {
         BQSearchParams<BqDrugEntity> params = paramsGet.toSearchParams();
         return drugService.page(params.toPage(), params.toWrapper());
     }
+
+    /**
+    * 根据IDs批量查询药品
+    */
+    @BQAuthMark(tag = TAG_NAME, buttons = {})
+    @BQLogMark(module = MODULE_NAME, operation = "批量查询")
+    @RequestMapping(value = "/listByIds", method = RequestMethod.GET)
+    public Iterable<BqDrugEntity> listByIds(@RequestParam String ids) {
+        String[] idArr = ids.split(",");
+        return drugService.listByIds(java.util.Arrays.asList(idArr));
+    }
 }

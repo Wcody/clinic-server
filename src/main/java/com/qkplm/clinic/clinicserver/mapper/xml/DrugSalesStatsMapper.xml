@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qkplm.clinic.clinicserver.mapper.DrugSalesStatsMapper">
+
+    <!-- ============ 药品销售明细列表 ============ -->
+    <select id="selectDrugSalesDetail" resultType="java.util.Map">
+        SELECT
+            ds.created               AS saleTime,
+            ds.patientName          AS patientName,
+            ds.age                   AS ageStr,
+            p.gender                 AS gender,
+            ds.operatorPerson        AS doctor,
+            di.drugName              AS drugName,
+            di.specification         AS specification,
+            di.manufacturer          AS manufacturer,
+            di.unitPrice             AS unitPrice,
+            di.quantity              AS quantity,
+            di.unit                  AS unit,
+            di.amount                AS totalAmount,
+            ds.statusRemark          AS chargeStatus
+        FROM bq_drug_sales ds
+        LEFT JOIN bq_drug_sales_item di ON di.salesId = ds.id AND di.deleted = 0
+        LEFT JOIN bq_patient p ON p.name = ds.patientName AND p.deleted = 0
+        WHERE ds.deleted = 0
+        <if test="drugName != null and drugName != ''">
+            AND di.drugName LIKE CONCAT('%', #{drugName}, '%')
+        </if>
+        <if test="doctor != null and doctor != ''">
+            AND ds.operatorPerson = #{doctor}
+        </if>
+        <if test="startTime != null">
+            AND ds.created &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND ds.created &lt;= #{endTime}
+        </if>
+        ORDER BY ds.created DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countDrugSalesDetail" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM bq_drug_sales ds
+        LEFT JOIN bq_drug_sales_item di ON di.salesId = ds.id AND di.deleted = 0
+        WHERE ds.deleted = 0
+        <if test="drugName != null and drugName != ''">
+            AND di.drugName LIKE CONCAT('%', #{drugName}, '%')
+        </if>
+        <if test="doctor != null and doctor != ''">
+            AND ds.operatorPerson = #{doctor}
+        </if>
+        <if test="startTime != null">
+            AND ds.created &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND ds.created &lt;= #{endTime}
+        </if>
+    </select>
+
+    <!-- ============ 药品销售统计（按药品聚合） ============ -->
+    <select id="selectDrugSalesStat" resultType="java.util.Map">
+        SELECT
+            di.drugName              AS drugName,
+            di.specification         AS specification,
+            di.unit                  AS unit,
+            di.manufacturer          AS manufacturer,
+            COUNT(*)                 AS saleTimes,
+            SUM(CAST(di.quantity AS DECIMAL(15,2))) AS totalQuantity,
+            ROUND(COALESCE(SUM(CAST(di.amount AS DECIMAL(15,2))), 0), 2) AS totalAmount,
+            ROUND(COALESCE(AVG(CAST(di.unitPrice AS DECIMAL(15,4))), 0), 4) AS avgPrice
+        FROM bq_drug_sales ds
+        LEFT JOIN bq_drug_sales_item di ON di.salesId = ds.id AND di.deleted = 0
+        WHERE ds.deleted = 0
+        <if test="drugName != null and drugName != ''">
+            AND di.drugName LIKE CONCAT('%', #{drugName}, '%')
+        </if>
+        <if test="startTime != null">
+            AND ds.created &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND ds.created &lt;= #{endTime}
+        </if>
+        GROUP BY di.drugName, di.specification, di.unit, di.manufacturer
+        ORDER BY totalAmount DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countDrugSalesStat" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM (
+            SELECT 1
+            FROM bq_drug_sales ds
+            LEFT JOIN bq_drug_sales_item di ON di.salesId = ds.id AND di.deleted = 0
+            WHERE ds.deleted = 0
+            <if test="drugName != null and drugName != ''">
+                AND di.drugName LIKE CONCAT('%', #{drugName}, '%')
+            </if>
+            <if test="startTime != null">
+                AND ds.created &gt;= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND ds.created &lt;= #{endTime}
+            </if>
+            GROUP BY di.drugName, di.specification, di.unit, di.manufacturer
+        ) t
+    </select>
+
+    <!-- ============ 药品销售统计汇总 ============ -->
+    <select id="selectDrugSalesStatSummary" resultType="java.util.Map">
+        SELECT
+            COUNT(DISTINCT di.drugName)                        AS drugTypeCount,
+            ROUND(COALESCE(SUM(CAST(di.quantity AS DECIMAL(15,2))), 0), 2) AS totalQuantity,
+            ROUND(COALESCE(SUM(CAST(di.amount AS DECIMAL(15,2))), 0), 2) AS totalAmount
+        FROM bq_drug_sales ds
+        LEFT JOIN bq_drug_sales_item di ON di.salesId = ds.id AND di.deleted = 0
+        WHERE ds.deleted = 0
+        <if test="drugName != null and drugName != ''">
+            AND di.drugName LIKE CONCAT('%', #{drugName}, '%')
+        </if>
+        <if test="startTime != null">
+            AND ds.created &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND ds.created &lt;= #{endTime}
+        </if>
+    </select>
+
+</mapper>

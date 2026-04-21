@@ -32,10 +32,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
-* @author Wcke
-* @description <p>系统菜单 服务接口类</p>
-* @datetime 2024-6-19 20:27
-*/
+ * @author Wcke
+ * @description
+ *              <p>
+ *              系统菜单 服务接口类
+ *              </p>
+ * @datetime 2024-6-19 20:27
+ */
 @Service
 public class TbMenuServiceImpl extends BaqiServiceImpl<TbMenuMapper, TbMenuEntity> implements ITbMenuService {
 
@@ -71,15 +74,16 @@ public class TbMenuServiceImpl extends BaqiServiceImpl<TbMenuMapper, TbMenuEntit
         Iterable<TbMenuEntity> list = this.listByParentId(parentId);
         for (TbMenuEntity menu : list) {
             boolean isMenu = !Objects.equals(menu.getMenuType(), BQMenuTypeEnum.BUTTON.getCode());
-            boolean hasPermission = userDetails.isSuperAccount() || userDetails.isAdminAccount() || userDetails.getMenus().contains(menu.getEid());
+            boolean hasPermission = userDetails.isSuperAccount() || userDetails.isAdminAccount()
+                    || userDetails.getMenus().contains(menu.getEid());
             if (isMenu && hasPermission && menu.getStatus()) {
                 if (userDetails.isAdminAccount() && !BQAuthUtils.isAuthMenu(menu.getEid())) {
-                    //对admin放行授权的菜单
+                    // 对admin放行授权的菜单
                     continue;
                 }
                 ObjectNode node = BQJacksonUtils.newObjectNode();
                 node.put("path", menu.getPath());
-                //顶层不能返回名称
+                // 顶层不能返回名称
                 if (!Objects.equals(parentId, "0")) {
                     node.put("name", menu.getName());
                 }
@@ -88,7 +92,7 @@ public class TbMenuServiceImpl extends BaqiServiceImpl<TbMenuMapper, TbMenuEntit
                 }
                 List<String> auths = getButtonAuthsBy(menu.getEid(), userDetails.getRoles());
                 if (userDetails.isSuperAccount()) {
-                    //返回最大权限
+                    // 返回最大权限
                     auths = new ArrayList<>(auths);
                     auths.add("super");
                 } else if (userDetails.isAdminAccount()) {
@@ -98,7 +102,7 @@ public class TbMenuServiceImpl extends BaqiServiceImpl<TbMenuMapper, TbMenuEntit
                     auths = new ArrayList<>(auths);
                     auths.add("common");
                 }
-                //解开逗号
+                // 解开逗号
                 List<String> extractAuth = new ArrayList<>();
                 for (String auth : auths) {
                     if (!StringUtils.isBlank(auth)) {
@@ -110,14 +114,14 @@ public class TbMenuServiceImpl extends BaqiServiceImpl<TbMenuMapper, TbMenuEntit
                         .put("icon", menu.getIcon())
                         .putPOJO("auths", extractAuth)
                         .put("rank", menu.getOrderValue())
-                );
+                        .put("keepAlive", menu.getKeepAlive()));
 
                 ArrayNode children = getRoutes(menu.getEid(), BQJacksonUtils.newArrayNode());
                 if (!children.isEmpty()) {
                     node.putPOJO("children", children);
                 }
                 menus.add(node);
-           }
+            }
         }
         return menus;
     }
@@ -126,7 +130,8 @@ public class TbMenuServiceImpl extends BaqiServiceImpl<TbMenuMapper, TbMenuEntit
     public Iterable<TbMenuEntity> getRoleMenus() {
         BQSecurityUserDetails userDetails = BQRequestContextHolderUtils.getUserDetails();
         LambdaQueryWrapper<TbMenuEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.select(TbMenuEntity::getEid, TbMenuEntity::getParentId, TbMenuEntity::getTitle, TbMenuEntity::getRemark);
+        wrapper.select(TbMenuEntity::getEid, TbMenuEntity::getParentId, TbMenuEntity::getTitle,
+                TbMenuEntity::getRemark);
         if (!userDetails.isSuperAccount()) {
             wrapper.in(TbMenuEntity::getEid, BQAuthUtils.getMenuIds());
         }
@@ -164,25 +169,26 @@ public class TbMenuServiceImpl extends BaqiServiceImpl<TbMenuMapper, TbMenuEntit
     }
 
     @Override
-    public Boolean reloadResource() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, NoSuchFieldException {
-        //菜单的键值对
+    public Boolean reloadResource()
+            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, NoSuchFieldException {
+        // 菜单的键值对
         Map<String, String> map = getNameAndEidMap();
         if (map.isEmpty()) {
             throw new BQApiException("菜单模块中的主菜单未定义");
         }
-        //获取所有菜单对应的按钮{key:[string]}
+        // 获取所有菜单对应的按钮{key:[string]}
         ObjectNode buttons = BQReflectionUtils.getConstantButtons("com.qkplm.clinic.clinicserver.constant.buttons");
         if (buttons.isEmpty()) {
             throw new BQApiException("constant.buttons的菜单按钮未定义");
         }
-        //需要新增或更新的按钮列表
+        // 需要新增或更新的按钮列表
         List<TbMenuEntity> menus = new ArrayList<>();
         // 遍历
         buttons.fields().forEachRemaining(entry -> {
             String parentId = map.get(entry.getKey());
             if (Objects.nonNull(parentId)) {
                 ArrayNode arrayNode = (ArrayNode) entry.getValue();
-                final int[] order = {0};
+                final int[] order = { 0 };
                 int step = 10;
                 arrayNode.forEach(node -> {
                     BQButton button;

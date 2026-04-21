@@ -1,7 +1,7 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月19日
+* 首创日期： 2026年4月22日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
@@ -17,7 +17,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>药品管理表 实体类</p>
-* @datetime 2026-4-19 19:15
+* @datetime 2026-4-22 2:10
 */
 @Getter
 @Setter
@@ -30,9 +30,14 @@ public class BqDrugEntity extends BQIdBaseEntity {
     private String name;
 
     /**
-     * [B]药品类型:1西药 2中药 3中成药
+     * 名称拼音首字母
      */
-    private Boolean type;
+    private String pinyin;
+
+    /**
+     * 药品类型:1西药 2中药
+     */
+    private Byte type;
 
     /**
      * 药品类型名称
@@ -55,19 +60,34 @@ public class BqDrugEntity extends BQIdBaseEntity {
     private String supplier;
 
     /**
-     * 处方价格
+     * 散卖价格
      */
     private String prescriptionPrice;
+
+    /**
+     * 散卖单位
+     */
+    private String prescriptionUnit;
+
+    /**
+     * 整卖价格
+     */
+    private String wholesalePrice;
+
+    /**
+     * 整卖单位
+     */
+    private String wholesaleUnit;
+
+    /**
+     * 大单位转小单位的值
+     */
+    private String conversionValue;
 
     /**
      * 采购成本价
      */
     private String purchaseCostPrice;
-
-    /**
-     * 库存
-     */
-    private String stock;
 
     /**
      * 项目编码
@@ -90,7 +110,7 @@ public class BqDrugEntity extends BQIdBaseEntity {
     private LocalDate expireDate;
 
     /**
-     * [B]状态:启用/禁用
+     * [B]状态:1启用0/禁用
      */
     private Boolean status;
 
@@ -123,4 +143,64 @@ public class BqDrugEntity extends BQIdBaseEntity {
      * 删除时间
      */
     private LocalDateTime deletedTime;
+
+    /**
+     * 单次用量
+     */
+    private String singleDosage;
+
+    /**
+     * 单次用量单位Id
+     */
+    private Integer unitId;
+
+    /**
+     * 用法
+     */
+    private String useWay;
+
+    /**
+     * 频次
+     */
+    private String frequency;
+
+    /**
+     * 库存
+     */
+    private String stock;
+
+    /**
+     * 库存下限
+     */
+    private String minStock;
+
+    /**
+     * 初始库存单位Id
+     */
+    private String initialStockUnitId;
+
+    /**
+     * 批准文号
+     */
+    private String approvalNumber;
+
+    /**
+     * 条形码
+     */
+    private String barcode;
+
+    /**
+     * 自编码
+     */
+    private String customCode;
+
+    /**
+     * 默认售卖方式，0整卖，1散卖
+     */
+    private Integer defaultSaleType;
+
+    /**
+     * 煎药方式
+     */
+    private String decoWay;
 }

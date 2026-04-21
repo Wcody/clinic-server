@@ -2,25 +2,27 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.qkplm.clinic.clinicserver.mapper.WorkloadStatsMapper">
 
-    <!-- ============ 按医生聚合工作量 ============ -->
+    <!-- ============ 按医生聚合工作量（已修复重复统计） ============ -->
     <select id="selectWorkloadByDoctor" resultType="java.util.Map">
         SELECT
             d.doctor,
-            COALESCE(reg.visitCount,          0)     AS visitCount,
-            COALESCE(bill.patientCount,       0)     AS patientCount,
-            COALESCE(bill.prescriptionCount,  0)     AS prescriptionCount,
-            ROUND(COALESCE(bill.prescriptionFee,  0), 2) AS prescriptionFee,
-            ROUND(COALESCE(sales.actualTotal,     0), 2) AS actualAmount,
-            ROUND(COALESCE(sales.costTotal,       0), 2) AS totalCost,
+            COALESCE(reg.visitCount, 0) AS visitCount,
+            COALESCE(bill.patientCount, 0) AS patientCount,
+            COALESCE(bill.prescriptionCount, 0) AS prescriptionCount,
+
+            ROUND(COALESCE(bill.prescriptionFee, 0), 2) AS prescriptionFee,
+            ROUND(COALESCE(sales.actualTotal, 0), 2) AS actualAmount,
+            ROUND(COALESCE(sales.costTotal, 0), 2) AS totalCost,
             ROUND(COALESCE(sales.actualTotal, 0) - COALESCE(sales.costTotal, 0), 2) AS totalProfit,
-            ROUND(COALESCE(bill.westernDrugFee,   0), 2) AS westernDrugFee,
+
+            ROUND(COALESCE(bill.westernDrugFee, 0), 2) AS westernDrugFee,
             ROUND(COALESCE(bill.chineseHerbalFee, 0), 2) AS chineseHerbalFee,
             ROUND(COALESCE(bill.chinesePatentFee, 0), 2) AS chinesePatentFee,
-            ROUND(COALESCE(bill.treatmentFee,     0), 2) AS treatmentFee,
-            ROUND(COALESCE(bill.consultFee,       0), 2) AS consultFee,
-            ROUND(COALESCE(bill.materialFee,      0), 2) AS materialFee,
-            ROUND(COALESCE(bill.otherFee,         0), 2) AS otherFee,
-            ROUND(COALESCE(bill.additionalFee,    0), 2) AS additionalFee
+            ROUND(COALESCE(bill.treatmentFee, 0), 2) AS treatmentFee,
+            ROUND(COALESCE(bill.consultFee, 0), 2) AS consultFee,
+            ROUND(COALESCE(bill.materialFee, 0), 2) AS materialFee,
+            ROUND(COALESCE(bill.otherFee, 0), 2) AS otherFee,
+            ROUND(COALESCE(bill.additionalFee, 0), 2) AS additionalFee
         FROM (
             SELECT DISTINCT doctor
             FROM bq_registration
@@ -30,90 +32,61 @@
             </if>
         ) d
         LEFT JOIN (
-            /* 门诊人次 */
+            <!-- 挂号人次 -->
             SELECT doctor, COUNT(*) AS visitCount
             FROM bq_registration
             WHERE deleted = 0
             <if test="startTime != null">AND orderTime &gt;= #{startTime}</if>
             <if test="endTime != null">AND orderTime &lt;= #{endTime}</if>
-            <if test="doctor != null and doctor != ''">AND doctor = #{doctor}</if>
             GROUP BY doctor
         ) reg ON reg.doctor = d.doctor
         LEFT JOIN (
-            /* 收费账单聚合 */
+            <!-- 收费汇总（先分组，避免JOIN膨胀） -->
             SELECT
                 doctor,
-                COUNT(DISTINCT patientName)                                         AS patientCount,
-                COUNT(*)                                                             AS prescriptionCount,
-                SUM(amount)                                                          AS prescriptionFee,
-                SUM(CASE WHEN typeString LIKE '%西药%'   THEN amount ELSE 0 END)     AS westernDrugFee,
-                SUM(CASE WHEN typeString LIKE '%中草药%' THEN amount ELSE 0 END)     AS chineseHerbalFee,
-                SUM(CASE WHEN typeString LIKE '%中成药%' THEN amount ELSE 0 END)     AS chinesePatentFee,
-                SUM(CASE WHEN typeString LIKE '%治疗%'   THEN amount ELSE 0 END)     AS treatmentFee,
-                SUM(CASE WHEN typeString LIKE '%诊查%'   THEN amount ELSE 0 END)     AS consultFee,
-                SUM(CASE WHEN typeString LIKE '%材料%'   THEN amount ELSE 0 END)     AS materialFee,
-                SUM(CASE WHEN typeString LIKE '%其他%'   THEN amount ELSE 0 END)     AS otherFee,
-                SUM(CASE WHEN typeString LIKE '%附加%'   THEN amount ELSE 0 END)     AS additionalFee
+                COUNT(DISTINCT patientName) AS patientCount,
+                COUNT(*) AS prescriptionCount,
+                SUM(amount) AS prescriptionFee,
+                SUM(CASE WHEN typeString LIKE '%西药%' THEN amount ELSE 0 END) AS westernDrugFee,
+                SUM(CASE WHEN typeString LIKE '%中草药%' THEN amount ELSE 0 END) AS chineseHerbalFee,
+                SUM(CASE WHEN typeString LIKE '%中成药%' THEN amount ELSE 0 END) AS chinesePatentFee,
+                SUM(CASE WHEN typeString LIKE '%治疗%' THEN amount ELSE 0 END) AS treatmentFee,
+                SUM(CASE WHEN typeString LIKE '%诊查%' THEN amount ELSE 0 END) AS consultFee,
+                SUM(CASE WHEN typeString LIKE '%材料%' THEN amount ELSE 0 END) AS materialFee,
+                SUM(CASE WHEN typeString LIKE '%其他%' THEN amount ELSE 0 END) AS otherFee,
+                SUM(CASE WHEN typeString LIKE '%附加%' THEN amount ELSE 0 END) AS additionalFee
             FROM bq_bill_not_charged
             WHERE deleted = 0
             <if test="startTime != null">AND visitTime &gt;= #{startTime}</if>
             <if test="endTime != null">AND visitTime &lt;= #{endTime}</if>
-            <if test="doctor != null and doctor != ''">AND doctor = #{doctor}</if>
             GROUP BY doctor
         ) bill ON bill.doctor = d.doctor
         LEFT JOIN (
-            /* 药房销售：实收总额 + 成本（operatorPerson 对应医生姓名） */
+            <!-- 销售数据（先分组，再JOIN，彻底解决重复统计） -->
             SELECT
                 operatorPerson,
-                SUM(CAST(actualAmount AS DECIMAL(15,2))) AS actualTotal,
-                SUM(CAST(amount AS DECIMAL(15,2)) - CAST(actualAmount AS DECIMAL(15,2))) AS costTotal
+                SUM(actualAmount) AS actualTotal,
+                SUM(amount - actualAmount) AS costTotal
             FROM bq_drug_sales
             WHERE deleted = 0
             <if test="startTime != null">AND created &gt;= #{startTime}</if>
             <if test="endTime != null">AND created &lt;= #{endTime}</if>
-            <if test="doctor != null and doctor != ''">AND operatorPerson = #{doctor}</if>
             GROUP BY operatorPerson
         ) sales ON sales.operatorPerson = d.doctor
         ORDER BY d.doctor
     </select>
 
-    <!-- ============ 汇总卡片 ============ -->
+    <!-- ============ 汇总卡片（高性能版，无重复子查询） ============ -->
     <select id="selectWorkloadSummary" resultType="java.util.Map">
         SELECT
-            ROUND(COALESCE((
-                SELECT SUM(CAST(actualAmount AS DECIMAL(15,2)))
-                FROM bq_drug_sales
-                WHERE deleted = 0
-                <if test="startTime != null">AND created &gt;= #{startTime}</if>
-                <if test="endTime != null">AND created &lt;= #{endTime}</if>
-                <if test="doctor != null and doctor != ''">AND operatorPerson = #{doctor}</if>
-            ), 0), 2) AS totalSales,
-            ROUND(COALESCE((
-                SELECT SUM(CAST(amount AS DECIMAL(15,2)) - CAST(actualAmount AS DECIMAL(15,2)))
-                FROM bq_drug_sales
-                WHERE deleted = 0
-                <if test="startTime != null">AND created &gt;= #{startTime}</if>
-                <if test="endTime != null">AND created &lt;= #{endTime}</if>
-                <if test="doctor != null and doctor != ''">AND operatorPerson = #{doctor}</if>
-            ), 0), 2) AS totalCost,
-            ROUND(
-                COALESCE((
-                    SELECT SUM(CAST(actualAmount AS DECIMAL(15,2)))
-                    FROM bq_drug_sales
-                    WHERE deleted = 0
-                    <if test="startTime != null">AND created &gt;= #{startTime}</if>
-                    <if test="endTime != null">AND created &lt;= #{endTime}</if>
-                    <if test="doctor != null and doctor != ''">AND operatorPerson = #{doctor}</if>
-                ), 0) -
-                COALESCE((
-                    SELECT SUM(CAST(amount AS DECIMAL(15,2)) - CAST(actualAmount AS DECIMAL(15,2)))
-                    FROM bq_drug_sales
-                    WHERE deleted = 0
-                    <if test="startTime != null">AND created &gt;= #{startTime}</if>
-                    <if test="endTime != null">AND created &lt;= #{endTime}</if>
-                    <if test="doctor != null and doctor != ''">AND operatorPerson = #{doctor}</if>
-                ), 0)
-            , 2) AS totalProfit
+            ROUND(COALESCE(SUM(actualAmount), 0), 2) AS totalSales,
+            ROUND(COALESCE(SUM(amount - actualAmount), 0), 2) AS totalCost,
+            ROUND(COALESCE(SUM(actualAmount - (amount - actualAmount)), 0), 2) AS totalProfit
+        FROM bq_drug_sales
+        WHERE deleted = 0
+        <if test="startTime != null">AND created &gt;= #{startTime}</if>
+        <if test="endTime != null">AND created &lt;= #{endTime}</if>
+        <if test="doctor != null and doctor != ''">AND operatorPerson = #{doctor}</if>
     </select>
 
 </mapper>

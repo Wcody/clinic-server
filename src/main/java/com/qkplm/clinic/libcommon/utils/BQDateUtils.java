@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Locale;
 
@@ -23,9 +24,34 @@ public class BQDateUtils {
         return format("yyyy-MM-dd HH:mm:ss", new Date());
     }
 
+    public static String getCurrentDateMills() {
+        return format("yyyy-MM-dd HH:mm:ss", new Date());
+    }
+
+    public static String getCurrentDateMillsNoSep() {
+        return format("yyyyMMddHHmmssSSS", new Date());
+    }
+
+    public static String getCurrentDateMillsNoSepShortYear() {
+        return format("yyMMddHHmmssSSS", new Date());
+    }
+
+    public static String getTodayStr() {
+        return format("yyyy-MM-dd", LocalDateTime.now());
+    }
+
+    public static String getNextDateStr() {
+        return format("yyyy-MM-dd", LocalDateTime.now().plusDays(1));
+    }
+
     public static String format(String fmt, Date date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat(fmt, Locale.CHINA);
         return dateFormat.format(date);
+    }
+
+    public static String format(String fmt, LocalDateTime date) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(fmt, Locale.CHINA);
+        return date.format(formatter);
     }
 
     public static long milliSeconds(LocalDateTime begin, LocalDateTime end) {

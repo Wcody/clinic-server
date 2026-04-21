@@ -1,7 +1,7 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月19日
+* 首创日期： 2026年4月22日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
@@ -17,7 +17,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>处方主表 实体类</p>
-* @datetime 2026-4-19 19:15
+* @datetime 2026-4-22 2:10
 */
 @Getter
 @Setter
@@ -63,6 +63,28 @@ public class BqPrescriptionEntity extends BQIdBaseEntity {
      * 处方总价
      */
     private BigDecimal totalPrice;
+
+    /**
+     * 用法类型ID，中药处方才用
+     */
+    private Integer usageType;
+
+    /**
+     * 频率ID，中药处方才用
+     */
+    private Integer frequence;
+
+    /**
+     * 剂数，中药处方才用
+     */
+    private Integer doseAmount;
+
+    /**
+     * 医嘱/嘱托，中药处方才用
+     */
+    private String recommendation;
+
+    private Integer days;
 
     /**
      * 状态:1已开 2已缴费 3已发药 4作废

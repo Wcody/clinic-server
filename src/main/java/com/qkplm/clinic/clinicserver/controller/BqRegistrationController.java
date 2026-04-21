@@ -353,11 +353,15 @@ public class BqRegistrationController {
             @RequestParam(required = false, defaultValue = "1") Integer currentPage,
             @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
 
-        // 将 startTime 默认为今天 00:00:00
-        startTime = LocalDate.now().atStartOfDay();
+        if (Objects.isNull(startTime)) {
+            // 将 startTime 默认为今天 00:00:00
+            startTime = LocalDate.now().atStartOfDay();
+        }
 
-        // 将 endTime 默认为明天 00:00:00
-        endTime = LocalDate.now().plusDays(1).atStartOfDay();
+        if (Objects.isNull(endTime)) {
+            // 将 endTime 默认为明天 00:00:00
+            endTime = LocalDate.now().plusDays(1).atStartOfDay();
+        }
 
         // 调用Service层查询方法
         Page<BqRegistrationEntity> page = registrationService.getVisitRecordList(

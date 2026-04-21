@@ -1,7 +1,7 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月19日
+* 首创日期： 2026年4月22日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
@@ -17,7 +17,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>处方明细表 实体类</p>
-* @datetime 2026-4-19 19:15
+* @datetime 2026-4-22 2:10
 */
 @Getter
 @Setter
@@ -30,7 +30,7 @@ public class BqPrescriptionItemEntity extends BQIdBaseEntity {
     private Integer prescId;
 
     /**
-     * 项目类型:1药品 2检查 3处置
+     * 项目类型:1西药,2中药,3中成药,101检查检验,102处置项目,103附加费
      */
     private Byte itemType;
 
@@ -128,4 +128,14 @@ public class BqPrescriptionItemEntity extends BQIdBaseEntity {
      * 删除人名称
      */
     private String deletedBy;
+
+    /**
+     * 煎药方式
+     */
+    private String docoWay;
+
+    /**
+     * 处方组号，相同组号回排在一起
+     */
+    private Integer groupNo;
 }

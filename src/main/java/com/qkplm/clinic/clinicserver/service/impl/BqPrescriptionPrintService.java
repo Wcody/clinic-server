@@ -104,7 +104,7 @@ public class BqPrescriptionPrintService {
 
         // 构建变量映射（对应模板占位符 {{key}}）
         Map<String, String> vars = new LinkedHashMap<>();
-        vars.put("title", "茂名市高州市石鼓镇九罡村卫生第一分站");
+        vars.put("title", "茂名市高州市石鼓镇九罡村曾俊华卫生室");
         vars.put("a", presc.getPrescNo() != null ? presc.getPrescNo() : "R" + presc.getId());
         vars.put("b", reg != null ? str(reg.getPatient()) : "");
         vars.put("c", reg != null ? str(reg.getGender()) : "");
@@ -239,8 +239,6 @@ public class BqPrescriptionPrintService {
     // ==================== PDF 转换 ====================
 
     private byte[] toPdf(byte[] docxBytes) throws Exception {
-        // ====================== 加这一行！禁用嵌入式字体 ======================
-        System.setProperty("org.docx4j.fonts.disableEmbeddedFonts", "true");
         try (InputStream is = new ByteArrayInputStream(docxBytes)) {
             WordprocessingMLPackage pkg = WordprocessingMLPackage.load(is);
             FOSettings fo = Docx4J.createFOSettings();

@@ -54,7 +54,11 @@ public class BqPrescriptionTemplateDetailServiceImpl extends BaqiServiceImpl<BqP
                 .map(Long::intValue)
                 .collect(Collectors.toList());
 
+        // 药品ID -> 价格映射
         Map<Long, String> priceMap = new HashMap<>();
+        // 药品名称 -> 药品ID映射（用于补充drugId为空的情况）
+        Map<String, Integer> drugNameToIdMap = new HashMap<>();
+
         if (!drugIds.isEmpty()) {
             List<BqDrugEntity> drugs = drugService.listByIds(drugIds);
             for (BqDrugEntity drug : drugs) {
@@ -64,10 +68,43 @@ public class BqPrescriptionTemplateDetailServiceImpl extends BaqiServiceImpl<BqP
             }
         }
 
+        // 通过药品名称补充drugId
+        List<String> drugNames = details.stream()
+                .map(BqPrescriptionTemplateDetailEntity::getDrugName)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (!drugNames.isEmpty()) {
+            // 批量查询同名药品，获取药品ID
+            for (String drugName : drugNames) {
+                if (!drugNameToIdMap.containsKey(drugName)) {
+                    // 查询第一个匹配的药品
+                    List<BqDrugEntity> drugs = drugService.lambdaQuery()
+                            .eq(BqDrugEntity::getName, drugName)
+                            .list();
+                    if (!drugs.isEmpty()) {
+                        drugNameToIdMap.put(drugName, drugs.get(0).getId());
+                    }
+                }
+            }
+        }
+
         return details.stream().map(d -> {
             BqPrescriptionTemplateDetailDto dto = new BqPrescriptionTemplateDetailDto();
             BeanUtils.copyProperties(d, dto);
+
+            // 设置价格
             dto.setPrice(d.getDrugId() != null ? priceMap.get(d.getDrugId()) : null);
+
+            // 如果drugId为空，通过药品名称补充
+            if (d.getDrugId() == null && d.getDrugName() != null) {
+                Integer drugId = drugNameToIdMap.get(d.getDrugName());
+                if (drugId != null) {
+                    dto.setDrugId(Long.valueOf(drugId));
+                }
+            }
+
             return dto;
         }).collect(Collectors.toList());
     }

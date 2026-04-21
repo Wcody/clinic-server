@@ -133,6 +133,17 @@ public class BQSearchParams<T> implements Serializable {
                     case "notBetween" ->
                         //不在...和...之间
                             queryWrapper.notBetween(searchItem.getField(), searchItem.getValue(), searchItem.getValue2());
+                    case "orLike" -> {
+                        // 多字段 OR 模糊匹配，field 用逗号分隔多个字段名
+                        String[] fields = searchItem.getField().split(",");
+                        final Object val = searchItem.getValue();
+                        queryWrapper.and(w -> {
+                            w.like(fields[0].trim(), val);
+                            for (int i = 1; i < fields.length; i++) {
+                                w.or().like(fields[i].trim(), val);
+                            }
+                        });
+                    }
                     case null, default -> log.error("不支持的查询操作符：{}", searchItem.getOperator());
                 }
             }

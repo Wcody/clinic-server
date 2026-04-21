@@ -21,23 +21,31 @@ import com.qkplm.clinic.clinicserver.service.IBqPrescriptionService;
 import com.qkplm.clinic.clinicserver.service.IBqRegistrationService;
 import com.qkplm.clinic.libcommon.api.BQApiException;
 import com.qkplm.clinic.libcommon.mybatis.base.BaqiServiceImpl;
+import com.qkplm.clinic.libcommon.utils.BQDateUtils;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
-* @author Wcke
-* @description <p>处方主表 服务接口类</p>
-* @datetime 2026-4-18 0:54
-*/
+ * @author Wcke
+ * @description
+ *              <p>
+ *              处方主表 服务接口类
+ *              </p>
+ * @datetime 2026-4-18 0:54
+ */
 @Service
-public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMapper, BqPrescriptionEntity> implements IBqPrescriptionService {
+public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMapper, BqPrescriptionEntity>
+        implements IBqPrescriptionService {
 
     @Autowired
     private IBqPatientService patientService;
@@ -51,6 +59,19 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BqSaveMedicalOrderDto.Result saveMedicalOrder(BqSaveMedicalOrderDto dto) {
+        // 先遍历获取处方总金额
+        // 先遍历获取处方总金额
+        List<BqSaveMedicalOrderDto.Group> groups = dto.getPrescriptions();
+        BigDecimal total = BigDecimal.ZERO;
+
+        if (groups != null && !groups.isEmpty()) {
+            total = groups.stream()
+                    .map(BqSaveMedicalOrderDto.Group::getTotalPrice)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        } else {
+            throw new BQApiException("请添加处方再操作");
+        }
         // 1. 确保患者存在
         Integer patientId = dto.getPatientId();
         if (patientId == null) {
@@ -83,6 +104,7 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
             registration.setGender(dto.getGender());
             registration.setFirstAge(dto.getFirstAge());
             registration.setLastAge(dto.getLastAge());
+            registration.setTotalPrice(total);
             registration.setAgeType(dto.getAgeType() != null ? dto.getAgeType().byteValue() : null);
             registration.setIsFirstVisit(dto.getIsFirstVisit());
             registration.setStatus("待接诊");
@@ -91,6 +113,15 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
                 throw new BQApiException("新增挂号失败");
             }
             regId = registration.getId();
+        } else {
+            BqRegistrationEntity registration = registrationService.getById(regId);
+            if (registration == null) {
+                throw new BQApiException("挂号信息不存在");
+            }
+            registration.setTotalPrice(total);
+            if (!registrationService.updateById(registration)) {
+                throw new BQApiException("更新挂号失败");
+            }
         }
 
         // 3. 病历ID（null 或 0 均视为无关联病历）
@@ -98,7 +129,6 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
 
         // 4. 逐组保存处方主表 + 明细
         List<Integer> prescIds = new ArrayList<>();
-        List<BqSaveMedicalOrderDto.Group> groups = dto.getPrescriptions();
         if (groups != null) {
             for (BqSaveMedicalOrderDto.Group group : groups) {
                 List<BqPrescriptionItemEntity> items = group.getItems();
@@ -133,10 +163,14 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
                         itemService.removeBatchByIds(oldIds);
                     }
                 } else {
+                    BqPrescriptionMapper mapper = getBaseMapper();
                     // 新增处方主表
                     BqPrescriptionEntity presc = new BqPrescriptionEntity();
                     presc.setRecordId(recordId);
                     presc.setRegId(regId);
+                    // 设置处方编码，2604200001));
+                    presc.setPrescNo(String
+                            .valueOf(mapper.getNextPrescNo(BQDateUtils.getTodayStr(), BQDateUtils.getNextDateStr())));
                     presc.setPatientId(patientId);
                     presc.setPrescType(group.getPrescType() != null ? group.getPrescType().byteValue() : null);
                     presc.setGroupNo(group.getGroupNo());

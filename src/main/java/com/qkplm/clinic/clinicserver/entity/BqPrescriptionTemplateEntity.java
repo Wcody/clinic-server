@@ -1,7 +1,7 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月19日
+* 首创日期： 2026年4月22日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
@@ -17,7 +17,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>处方模板主表 实体类</p>
-* @datetime 2026-4-19 19:15
+* @datetime 2026-4-22 2:10
 */
 @Getter
 @Setter
@@ -35,7 +35,7 @@ public class BqPrescriptionTemplateEntity extends BQIdBaseEntity {
     private Byte prescriptionType;
 
     /**
-     * 模板类型，1是个人，0是公共
+     * 模板类型，1是个人，2是诊所
      */
     private Byte templateType;
 
@@ -55,9 +55,16 @@ public class BqPrescriptionTemplateEntity extends BQIdBaseEntity {
     private Integer doseAmount;
 
     /**
-     * 医嘱/建议
+     * 医嘱/嘱托
      */
     private String recommendation;
+
+    private Integer days;
+
+    /**
+     * 处方详细描述
+     */
+    private String remark;
 
     /**
      * 操作人

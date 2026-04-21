@@ -10,14 +10,33 @@ import com.qkplm.clinic.clinicserver.entity.BqDrugEntity;
 import com.qkplm.clinic.clinicserver.mapper.BqDrugMapper;
 import com.qkplm.clinic.clinicserver.service.IBqDrugService;
 import com.qkplm.clinic.libcommon.mybatis.base.BaqiServiceImpl;
+import com.qkplm.clinic.libcommon.utils.BqPinyinUtils;
+
+import org.springframework.util.StringUtils;
 import org.springframework.stereotype.Service;
 
 /**
-* @author Wcke
-* @description <p>药品管理表 服务接口类</p>
-* @datetime 2026-4-14 12:56
-*/
+ * @author Wcke
+ * @description
+ *              <p>
+ *              药品管理表 服务接口类
+ *              </p>
+ * @datetime 2026-4-14 12:56
+ */
 @Service
 public class BqDrugServiceImpl extends BaqiServiceImpl<BqDrugMapper, BqDrugEntity> implements IBqDrugService {
 
+    @Override
+    public boolean save(BqDrugEntity entity) {
+        if (StringUtils.hasText(entity.getName()))
+            entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getName()));
+        return super.save(entity);
+    }
+
+    @Override
+    public boolean updateById(BqDrugEntity entity) {
+        if (StringUtils.hasText(entity.getName()))
+            entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getName()));
+        return super.updateById(entity);
+    }
 }
