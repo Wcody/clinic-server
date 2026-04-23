@@ -59,4 +59,39 @@ public class BQDateUtils {
         Instant endInstant = end.toInstant(ZoneOffset.of("+8"));
         return endInstant.toEpochMilli() - beginInstant.toEpochMilli();
     }
+
+    /**
+     * 格式化年龄字符串
+     */
+    public static String formatAge(Integer firstAge, Integer lastAge, Integer ageType) {
+        if (firstAge == null)
+            firstAge = 0;
+        if (lastAge == null)
+            lastAge = 0;
+
+        if (ageType == 1) {
+            // 年龄类型为年
+            if (firstAge > 0 && lastAge > 0) {
+                return firstAge + "岁" + lastAge + "月";
+            } else if (firstAge > 0) {
+                return firstAge + "岁";
+            } else if (lastAge > 0) {
+                return lastAge + "月";
+            } else {
+                return "0岁";
+            }
+        } else if (ageType == 2) {
+            // 年龄类型为月
+            if (firstAge > 0 && lastAge > 0) {
+                return firstAge + "月" + lastAge + "天";
+            } else if (firstAge > 0) {
+                return firstAge + "月";
+            } else if (lastAge > 0) {
+                return lastAge + "天";
+            } else {
+                return "0月";
+            }
+        }
+        return "未知";
+    }
 }

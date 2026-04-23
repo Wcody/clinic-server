@@ -9,6 +9,7 @@ package com.qkplm.clinic.clinicserver;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import com.qkplm.clinic.clinicserver.mp.BQDataPermissionHandlerCustom;
 import com.qkplm.clinic.libcommon.mybatis.BQDataPermissionHandler;
 import com.qkplm.clinic.libcommon.utils.BQAuthUtils;
@@ -19,6 +20,7 @@ import com.qkplm.clinic.libcommon.utils.BQAuthUtils;
  * @datetime: 2024-06-11 18:10
  */
 @SpringBootApplication(scanBasePackages = {"com.qkplm.clinic.libcommon", "com.qkplm.clinic.clinicserver"}, exclude = RabbitAutoConfiguration.class)
+@EnableScheduling
 public class ClinicServerApplication {
 
     public static void main(String[] args) {

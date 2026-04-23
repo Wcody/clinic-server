@@ -64,6 +64,20 @@ public class BqSaveMedicalOrderDto implements Serializable {
         private String groupNo;
         private BigDecimal totalPrice;
         private List<BqPrescriptionItemEntity> items;
+
+        // 中药处方主表字段
+        /** 用法类型ID，中药处方才用 */
+        private Integer usageType;
+        /** 频率ID，中药处方才用 */
+        private Integer frequence;
+        /** 剂数，中药处方才用 */
+        private Integer doseAmount;
+        /** 天数 */
+        private Integer days;
+        /** 医嘱/嘱托，中药处方才用 */
+        private String recommendation;
+        /** 煎药方式，中药处方才用 */
+        private String decoWay;
     }
 
     @Getter

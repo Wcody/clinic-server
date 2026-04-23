@@ -9,12 +9,15 @@ package com.qkplm.clinic.clinicserver.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qkplm.clinic.clinicserver.dtos.BqPrescriptionFullDto;
+import com.qkplm.clinic.clinicserver.dtos.BqPrescriptionWithDiagnosisVo;
 import com.qkplm.clinic.clinicserver.dtos.BqSaveMedicalOrderDto;
+import com.qkplm.clinic.clinicserver.entity.BqMedicalRecordEntity;
 import com.qkplm.clinic.clinicserver.entity.BqPatientEntity;
 import com.qkplm.clinic.clinicserver.entity.BqPrescriptionEntity;
 import com.qkplm.clinic.clinicserver.entity.BqPrescriptionItemEntity;
 import com.qkplm.clinic.clinicserver.entity.BqRegistrationEntity;
 import com.qkplm.clinic.clinicserver.mapper.BqPrescriptionMapper;
+import com.qkplm.clinic.clinicserver.service.IBqMedicalRecordService;
 import com.qkplm.clinic.clinicserver.service.IBqPatientService;
 import com.qkplm.clinic.clinicserver.service.IBqPrescriptionItemService;
 import com.qkplm.clinic.clinicserver.service.IBqPrescriptionService;
@@ -29,9 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -56,10 +59,24 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
     @Autowired
     private IBqPrescriptionItemService itemService;
 
+    @Autowired
+    private IBqMedicalRecordService medicalRecordService;
+
+    // 获取今天最大处方号,如果初始值1, 则拼接年月+四位流水号，例如25040001
+    private String getMaxPrescNo() {
+        BqPrescriptionMapper mapper = getBaseMapper();
+        int ret = mapper.getNextPrescNo(BQDateUtils.getTodayStr(), BQDateUtils.getNextDateStr());
+        if (ret < 1000) {
+            // 格式化为 4 位流水号（0001）
+            String serialNo = String.format("%04d", ret);
+            return BQDateUtils.format("yyMMdd", LocalDateTime.now()) + serialNo;
+        }
+        return String.valueOf(ret);
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BqSaveMedicalOrderDto.Result saveMedicalOrder(BqSaveMedicalOrderDto dto) {
-        // 先遍历获取处方总金额
         // 先遍历获取处方总金额
         List<BqSaveMedicalOrderDto.Group> groups = dto.getPrescriptions();
         BigDecimal total = BigDecimal.ZERO;
@@ -145,9 +162,18 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
                     presc.setRecordId(recordId);
                     presc.setRegId(regId);
                     presc.setPatientId(patientId);
-                    presc.setPrescType(group.getPrescType() != null ? group.getPrescType().byteValue() : null);
+                    presc.setPrescType(group.getPrescType());
                     presc.setGroupNo(group.getGroupNo());
                     presc.setTotalPrice(group.getTotalPrice());
+                    // 中药处方字段
+                    presc.setUsageType(group.getUsageType());
+                    presc.setFrequence(group.getFrequence());
+                    presc.setDoseAmount(group.getDoseAmount());
+                    presc.setDays(group.getDays());
+                    presc.setRecommendation(group.getRecommendation());
+                    presc.setDecoWay(group.getDecoWay() != null && !group.getDecoWay().isEmpty()
+                            ? Integer.parseInt(group.getDecoWay())
+                            : null);
                     if (!updateById(presc)) {
                         throw new BQApiException("更新处方失败");
                     }
@@ -163,19 +189,26 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
                         itemService.removeBatchByIds(oldIds);
                     }
                 } else {
-                    BqPrescriptionMapper mapper = getBaseMapper();
                     // 新增处方主表
                     BqPrescriptionEntity presc = new BqPrescriptionEntity();
                     presc.setRecordId(recordId);
                     presc.setRegId(regId);
                     // 设置处方编码，2604200001));
-                    presc.setPrescNo(String
-                            .valueOf(mapper.getNextPrescNo(BQDateUtils.getTodayStr(), BQDateUtils.getNextDateStr())));
+                    presc.setPrescNo(getMaxPrescNo());
                     presc.setPatientId(patientId);
-                    presc.setPrescType(group.getPrescType() != null ? group.getPrescType().byteValue() : null);
+                    presc.setPrescType(group.getPrescType());
                     presc.setGroupNo(group.getGroupNo());
                     presc.setTotalPrice(group.getTotalPrice());
                     presc.setStatus((byte) 1);
+                    // 中药处方字段
+                    presc.setUsageType(group.getUsageType());
+                    presc.setFrequence(group.getFrequence());
+                    presc.setDoseAmount(group.getDoseAmount());
+                    presc.setDays(group.getDays());
+                    presc.setRecommendation(group.getRecommendation());
+                    presc.setDecoWay(group.getDecoWay() != null && !group.getDecoWay().isEmpty()
+                            ? Integer.parseInt(group.getDecoWay())
+                            : null);
                     if (!save(presc)) {
                         throw new BQApiException("新增处方失败");
                     }
@@ -218,5 +251,81 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
             dto.setItems(items);
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * 根据 recordId 批量填充诊断信息
+     */
+    private void fillDiagnosisInfo(List<? extends BqPrescriptionEntity> prescriptions) {
+        if (prescriptions == null || prescriptions.isEmpty()) {
+            return;
+        }
+        // 收集所有非空的 recordId
+        List<Integer> recordIds = prescriptions.stream()
+                .map(BqPrescriptionEntity::getRecordId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (recordIds.isEmpty()) {
+            return;
+        }
+
+        // 批量查询病历
+        QueryWrapper<BqMedicalRecordEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.in("id", recordIds);
+        Map<Integer, BqMedicalRecordEntity> recordMap = medicalRecordService.list(queryWrapper)
+                .stream()
+                .collect(Collectors.toMap(BqMedicalRecordEntity::getId, r -> r));
+
+        // 填充诊断信息
+        for (BqPrescriptionEntity presc : prescriptions) {
+            if (presc instanceof BqPrescriptionWithDiagnosisVo) {
+                BqPrescriptionWithDiagnosisVo vo = (BqPrescriptionWithDiagnosisVo) presc;
+                BqMedicalRecordEntity record = recordMap.get(presc.getRecordId());
+                if (record != null) {
+                    vo.setDiagnosis(record.getDiagnosis());
+                    vo.setDiagnosisIds(record.getDiagnosisIds());
+                }
+            }
+        }
+    }
+
+    /**
+     * 查询处方列表并关联诊断信息
+     */
+    public List<BqPrescriptionWithDiagnosisVo> listWithDiagnosis(QueryWrapper<BqPrescriptionEntity> wrapper) {
+        List<BqPrescriptionEntity> prescriptions = list(wrapper);
+        List<BqPrescriptionWithDiagnosisVo> vos = prescriptions.stream()
+                .map(p -> {
+                    BqPrescriptionWithDiagnosisVo vo = new BqPrescriptionWithDiagnosisVo();
+                    vo.setId(p.getId());
+                    vo.setPrescNo(p.getPrescNo());
+                    vo.setRecordId(p.getRecordId());
+                    vo.setRegId(p.getRegId());
+                    vo.setPatientId(p.getPatientId());
+                    vo.setDoctorId(p.getDoctorId());
+                    vo.setPrescType(p.getPrescType());
+                    vo.setGroupNo(p.getGroupNo());
+                    vo.setTotalPrice(p.getTotalPrice());
+                    vo.setUsageType(p.getUsageType());
+                    vo.setFrequence(p.getFrequence());
+                    vo.setDoseAmount(p.getDoseAmount());
+                    vo.setRecommendation(p.getRecommendation());
+                    vo.setDecoWay(p.getDecoWay());
+                    vo.setDays(p.getDays());
+                    vo.setStatus(p.getStatus());
+                    vo.setVersion(p.getVersion());
+                    vo.setDeleted(p.getDeleted());
+                    vo.setDeletedTime(p.getDeletedTime());
+                    vo.setDeletedBy(p.getDeletedBy());
+                    vo.setCreatedTime(p.getCreatedTime());
+                    vo.setUpdatedTime(p.getUpdatedTime());
+                    return vo;
+                })
+                .collect(Collectors.toList());
+
+        fillDiagnosisInfo(vos);
+        return vos;
     }
 }

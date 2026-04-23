@@ -3,8 +3,24 @@
   <renderers>
     <renderer mime="application/pdf">
       <fonts>
-        <!-- Windows 系统字体自动扫描，支持中文 -->
+
+        <!-- 项目资源目录字体（自动扫描） -->
+        <directory recursive="true">src/main/resources/fonts</directory>
+
+        <!-- Windows 系统字体 -->
         <directory recursive="true">C:/Windows/Fonts</directory>
+
+        <!-- ====================== 在这里加你要的字体 ====================== -->
+        <!-- 阿里健康体 2.0 常规体 45R -->
+        <font embed-url="src/main/resources/fonts/AlibabaHealthFont2.0CN-45R.ttf">
+            <font-triplet name="阿里健康体" weight="normal" style="normal"/>
+        </font>
+
+        <!-- 阿里健康体 2.0 粗体 85B -->
+        <font embed-url="src/main/resources/fonts/AlibabaHealthFont2.0CN-85B.ttf">
+            <font-triplet name="阿里健康体" weight="bold" style="normal"/>
+        </font>
+
         <auto-detect/>
       </fonts>
     </renderer>

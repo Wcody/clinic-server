@@ -159,39 +159,23 @@ public class BqRegistrationServiceImpl extends BaqiServiceImpl<BqRegistrationMap
             Integer currentPage,
             Integer pageSize) {
 
-        // 构建分页对象
-        Page<BqRegistrationEntity> page = new Page<>(currentPage, pageSize);
-
-        // 构建查询条件
-        LambdaQueryWrapper<BqRegistrationEntity> wrapper = new LambdaQueryWrapper<>();
-
-        // 患者姓名模糊查询
-        if (StringUtils.hasText(patientName)) {
-            wrapper.like(BqRegistrationEntity::getPatient, patientName);
-        }
-
-        // 挂号时间范围查询
-        if (startTime != null) {
-            wrapper.ge(BqRegistrationEntity::getOrderTime, startTime);
-        }
-        if (endTime != null) {
-            wrapper.le(BqRegistrationEntity::getOrderTime, endTime);
-        }
-
-        // 状态精确查询（必填）
-        if (StringUtils.hasText(status)) {
-            wrapper.eq(BqRegistrationEntity::getStatus, status);
-        } else {
+        if (!StringUtils.hasText(status)) {
             log.warn("就诊列表查询时status参数为空");
             throw new BQApiException("状态参数不能为空");
         }
 
-        // 过滤已删除的记录，并按创建时间倒序排列
-        wrapper.eq(BqRegistrationEntity::getDeleted, false)
-                .orderByDesc(BqRegistrationEntity::getCreatedTime);
+        long offset = (long) (currentPage - 1) * pageSize;
 
-        // 执行分页查询
-        return this.page(page, wrapper);
+        // 关联患者表查询，获取患者表的冗余字段
+        List<BqRegistrationEntity> list = this.baseMapper.selectVisitRecordList(
+                patientName, startTime, endTime, status, offset, pageSize);
+        Long total = this.baseMapper.countVisitRecordList(
+                patientName, startTime, endTime, status);
+
+        // 构建分页对象
+        Page<BqRegistrationEntity> page = new Page<>(currentPage, pageSize, total);
+        page.setRecords(list);
+        return page;
     }
 
     @Override

@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RestController;
 import com.qkplm.clinic.clinicserver.dtos.BqPrescriptionFullDto;
+import com.qkplm.clinic.clinicserver.dtos.BqPrescriptionWithDiagnosisVo;
 import com.qkplm.clinic.clinicserver.dtos.BqSaveMedicalOrderDto;
 import com.qkplm.clinic.clinicserver.service.IBqPrescriptionService;
 import com.qkplm.clinic.clinicserver.service.impl.BqPrescriptionPrintService;
@@ -166,15 +167,17 @@ public class BqPrescriptionController {
 
     /**
      * 生成处方PDF，用于打印预览
-     * GET /prescription/printPdf?regId=xxx&showPrice=true
+     * GET /prescription/printPdf?regId=xxx&showPrice=true&printCurrent=false&prescType=1
      */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "打印处方")
     @RequestMapping(value = "/printPdf", method = RequestMethod.GET)
     public void printPdf(@RequestParam Integer regId,
                          @RequestParam(defaultValue = "true") Boolean showPrice,
+                         @RequestParam(defaultValue = "false") Boolean printCurrent,
+                         @RequestParam(required = false) Integer prescType,
                          HttpServletResponse response) throws Exception {
-        byte[] pdfBytes = prescriptionPrintService.generatePdf(regId, showPrice);
+        byte[] pdfBytes = prescriptionPrintService.generatePdf(regId, showPrice, printCurrent, prescType);
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "inline; filename=prescription.pdf");
         response.setContentLength(pdfBytes.length);
@@ -213,6 +216,18 @@ public class BqPrescriptionController {
     public Iterable<BqPrescriptionEntity> list(BQSearchParamsGet<BqPrescriptionEntity> paramsGet) {
         BQSearchParams<BqPrescriptionEntity> params = paramsGet.toSearchParams();
         return prescriptionService.list(params.toPage(), params.toWrapper());
+    }
+
+    /**
+     * 列表查询（带诊断信息），orders可以排序，filters可以过滤
+     * GET /prescription/listWithDiagnosis
+     */
+    @BQAuthMark(tag = TAG_NAME, buttons = {})
+    @BQLogMark(module = MODULE_NAME, operation = "列表查询")
+    @RequestMapping(value = "/listWithDiagnosis", method = RequestMethod.GET)
+    public List<BqPrescriptionWithDiagnosisVo> listWithDiagnosis(BQSearchParamsGet<BqPrescriptionEntity> paramsGet) {
+        BQSearchParams<BqPrescriptionEntity> params = paramsGet.toSearchParams();
+        return prescriptionService.listWithDiagnosis(params.toWrapper());
     }
 
     /**

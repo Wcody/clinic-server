@@ -2,6 +2,35 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.qkplm.clinic.clinicserver.mapper.BqRegistrationMapper">
 
+    <!-- 就诊记录结果映射 -->
+    <resultMap id="VisitRecordResultMap" type="com.qkplm.clinic.clinicserver.entity.BqRegistrationEntity">
+        <id property="id" column="id"/>
+        <result property="patient" column="patient"/>
+        <result property="gender" column="gender"/>
+        <result property="firstAge" column="firstAge"/>
+        <result property="lastAge" column="lastAge"/>
+        <result property="ageType" column="ageType"/>
+        <!-- 其他字段映射 -->
+        <result property="registrationNo" column="registrationNo"/>
+        <result property="department" column="department"/>
+        <result property="doctor" column="doctor"/>
+        <result property="clinic" column="clinic"/>
+        <result property="totalPrice" column="totalPrice"/>
+        <result property="registrationType" column="registrationType"/>
+        <result property="outpatientType" column="outpatientType"/>
+        <result property="isFirstVisit" column="isFirstVisit"/>
+        <result property="orderTime" column="orderTime"/>
+        <result property="status" column="status"/>
+        <result property="patientId" column="patientId"/>
+        <result property="age" column="age"/>
+        <result property="statusFee" column="statusFee"/>
+        <result property="deleted" column="deleted"/>
+        <result property="createdTime" column="createdTime"/>
+        <result property="updatedTime" column="updatedTime"/>
+        <result property="createdBy" column="createdBy"/>
+        <result property="updatedBy" column="updatedBy"/>
+    </resultMap>
+
     <!-- 查询今天最大的挂号号码 -->
     <select id="selectMaxRegistrationNoToday" resultType="java.lang.Integer">
         SELECT MAX(registrationNo)
@@ -63,6 +92,72 @@
         </if>
         <if test="endTime != null">
             AND r.orderTime &lt;= #{endTime}
+        </if>
+    </select>
+
+    <!-- 就诊记录分页查询（关联患者表） -->
+    <select id="selectVisitRecordList" resultMap="VisitRecordResultMap">
+        SELECT
+            r.id,
+            p.name AS patient,
+            p.gender,
+            p.firstAge,
+            p.lastAge,
+            p.ageType,
+            r.registrationNo,
+            r.department,
+            r.doctor,
+            r.clinic,
+            r.totalPrice,
+            r.registrationType,
+            r.outpatientType,
+            r.isFirstVisit,
+            r.orderTime,
+            r.status,
+            r.patientId,
+            r.age,
+            r.statusFee,
+            r.deleted,
+            r.createdTime,
+            r.updatedTime,
+            r.createdBy,
+            r.updatedBy
+        FROM bq_registration r
+        LEFT JOIN bq_patient p ON p.id = r.patientId AND p.deleted = 0
+        WHERE r.deleted = 0
+        <if test="patientName != null and patientName != ''">
+            AND p.name LIKE CONCAT('%', #{patientName}, '%')
+        </if>
+        <if test="startTime != null">
+            AND r.orderTime &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND r.orderTime &lt;= #{endTime}
+        </if>
+        <if test="status != null and status != ''">
+            AND r.status = #{status}
+        </if>
+        ORDER BY r.createdTime DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 就诊记录总数查询 -->
+    <select id="countVisitRecordList" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM bq_registration r
+        LEFT JOIN bq_patient p ON p.id = r.patientId AND p.deleted = 0
+        WHERE r.deleted = 0
+        <if test="patientName != null and patientName != ''">
+            AND p.name LIKE CONCAT('%', #{patientName}, '%')
+        </if>
+        <if test="startTime != null">
+            AND r.orderTime &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND r.orderTime &lt;= #{endTime}
+        </if>
+        <if test="status != null and status != ''">
+            AND r.status = #{status}
         </if>
     </select>
 

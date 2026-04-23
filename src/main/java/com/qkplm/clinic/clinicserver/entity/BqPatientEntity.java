@@ -1,13 +1,14 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月22日
+* 首创日期： 2026年4月23日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.qkplm.clinic.libcommon.entity.BQIdBaseEntity;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,7 +18,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>患者信息表 实体类</p>
-* @datetime 2026-4-22 2:10
+* @datetime 2026-4-23 11:50
 */
 @Getter
 @Setter
@@ -80,19 +81,24 @@ public class BqPatientEntity extends BQIdBaseEntity {
     private String address;
 
     /**
-     * 初诊年龄
+     * ageType为1时，表示的是年数，2时表示的时月数
      */
     private Integer firstAge;
 
     /**
-     * 末次年龄
+     * ageType为1时，表示的是月数，2时表示的时日数
      */
     private Integer lastAge;
 
     /**
-     * 年龄类型
+     * 年龄类型，1年，2月
      */
     private Integer ageType;
+
+    /**
+     * 患者出生年月日
+     */
+    private LocalDate birthDate;
 
     /**
      * 是否过敏:1是 0否

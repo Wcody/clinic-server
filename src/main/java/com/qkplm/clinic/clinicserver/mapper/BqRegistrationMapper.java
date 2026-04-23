@@ -50,4 +50,24 @@ public interface BqRegistrationMapper extends IBaqiMapper<BqRegistrationEntity> 
             @Param("doctor") String doctor,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 就诊记录分页查询（关联患者表获取冗余字段）
+     */
+    List<BqRegistrationEntity> selectVisitRecordList(
+            @Param("patientName") String patientName,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("status") String status,
+            @Param("offset") long offset,
+            @Param("limit") int limit);
+
+    /**
+     * 就诊记录总数查询
+     */
+    Long countVisitRecordList(
+            @Param("patientName") String patientName,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("status") String status);
 }

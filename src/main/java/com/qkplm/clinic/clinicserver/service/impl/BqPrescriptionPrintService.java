@@ -15,7 +15,6 @@ import org.docx4j.Docx4J;
 import org.docx4j.convert.out.FOSettings;
 import org.docx4j.convert.out.fo.renderers.FORendererApacheFOP;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
-import org.apache.fop.apps.FopFactory;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPageMar;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTR;
@@ -47,10 +46,20 @@ public class BqPrescriptionPrintService {
 
     // ==================== 公开入口 ====================
 
-    public byte[] generatePdf(Integer regId, Boolean showPrice) throws Exception {
+    public byte[] generatePdf(Integer regId, Boolean showPrice, Boolean printCurrent, Integer prescType) throws Exception {
         List<BqPrescriptionFullDto> fullDtos = prescriptionService.listByRegId(regId);
         if (fullDtos.isEmpty()) {
             throw new RuntimeException("该挂号暂无处方信息");
+        }
+
+        // 按处方类型过滤
+        if (Boolean.TRUE.equals(printCurrent) && prescType != null) {
+            fullDtos = fullDtos.stream()
+                    .filter(dto -> prescType.equals(dto.getPrescription().getPrescType().intValue()))
+                    .collect(java.util.stream.Collectors.toList());
+            if (fullDtos.isEmpty()) {
+                throw new RuntimeException("该类型暂无处方信息");
+            }
         }
 
         BqRegistrationEntity reg = registrationService.getById(regId);
@@ -70,6 +79,11 @@ public class BqPrescriptionPrintService {
 
         byte[] templateBytes = new ClassPathResource("templates/template.docx")
                 .getInputStream().readAllBytes();
+
+        if (Boolean.TRUE.equals(printCurrent) && fullDtos.size() > 1) {
+            // 只打印第一页（当前处方）
+            return fillAndConvert(templateBytes, reg, patient, fullDtos.get(0), diagnosis, showPrice);
+        }
 
         if (fullDtos.size() == 1) {
             return fillAndConvert(templateBytes, reg, patient, fullDtos.get(0), diagnosis, showPrice);
@@ -243,12 +257,12 @@ public class BqPrescriptionPrintService {
             WordprocessingMLPackage pkg = WordprocessingMLPackage.load(is);
             FOSettings fo = Docx4J.createFOSettings();
             fo.setOpcPackage(pkg);
-            // // 直接用枚举设置 0 边距
-            // pkg.getDocumentModel().getSections().forEach(section -> {
-            // section.getPageDimensions().setMargins(
-            // org.docx4j.model.structure.MarginsWellKnown.NARROW);
-            // });
-            FopFactory fopFactory = FORendererApacheFOP.getFopFactoryBuilder(fo).build();
+            // 通过 FopConfParser 加载 fop-userconfig.xml（其中配置了 src/main/resources/fonts 字体目录）
+            java.io.InputStream configIs =
+                    new org.springframework.core.io.ClassPathResource("fop-userconfig.xml").getInputStream();
+            org.apache.fop.apps.FopConfParser parser =
+                    new org.apache.fop.apps.FopConfParser(configIs, new java.io.File(".").toURI());
+            org.apache.fop.apps.FopFactory fopFactory = parser.getFopFactoryBuilder().build();
             FORendererApacheFOP.getFOUserAgent(fo, fopFactory);
             ByteArrayOutputStream pdfOut = new ByteArrayOutputStream();
             Docx4J.toFO(fo, pdfOut, Docx4J.FLAG_EXPORT_PREFER_XSL);
@@ -281,7 +295,7 @@ public class BqPrescriptionPrintService {
         return (history != null && !history.isBlank()) ? history : "无";
     }
 
-    private String prescTypeName(Byte prescType) {
+    private String prescTypeName(Integer prescType) {
         if (prescType == null)
             return "";
         return switch (prescType) {
