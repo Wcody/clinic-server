@@ -28,11 +28,11 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class ChinesePrescriptionPdfUtil {
 
-    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy年dd/MM/yyyy");
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy年MM月dd日");
     private static final BaseFont BASE_FONT;
     private static final BaseFont BASE_FONT_BOLD;
     private static final float ROW_HEIGHT = 18f;
-    private static final int TCM_ROW_PER_PAGE = 10;
+    private static final int TCM_ROW_PER_PAGE = 12;
 
     static {
         try {
@@ -119,7 +119,7 @@ public class ChinesePrescriptionPdfUtil {
     private static void renderOnePrescription(Document document, PdfWriter writer, PrescriptionDTO dto,
             boolean showPrice) throws Exception {
         List<PrescriptionItemDTO> itemList = Optional.ofNullable(dto.getItems()).orElse(new ArrayList<>());
-        int totalRow = (itemList.size() + 2) / 3;
+        int totalRow = (itemList.size() + 1) / 2;
         int currRow = 0;
         int pageNum = 0;
 
@@ -159,40 +159,36 @@ public class ChinesePrescriptionPdfUtil {
         table.setWidthPercentage(95);
         table.setHorizontalAlignment(Element.ALIGN_CENTER);
         table.addCell(getLeftCell("总剂数：" + nvl(dto.getTotalDosage())));
-        table.addCell(getLeftCell("每日剂数：" + nvl(dto.getDailyDosage())));
+        table.addCell(getLeftCell("用法：" + nvl(dto.getDailyDosage())));
         table.addCell(getLeftCell("医嘱：" + nvl(dto.getMedicalAdvice())));
         document.add(table);
     }
 
     private static void addTcmTable(Document document, List<PrescriptionItemDTO> allItems, int startRow, int endRow)
             throws Exception {
-        PdfPTable table = new PdfPTable(3);
+        // 2 列布局，每行 2 味药
+        PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(95);
         table.setHorizontalAlignment(Element.ALIGN_CENTER);
-        table.setWidths(new float[] { 1, 1, 1 });
+        table.setWidths(new float[] { 1, 1 });
 
         for (int row = startRow; row < endRow; row++) {
-            int idx1 = row * 3;
-            int idx2 = row * 3 + 1;
-            int idx3 = row * 3 + 2;
+            int idx1 = row * 2;
+            int idx2 = row * 2 + 1;
 
             String col1 = idx1 < allItems.size() ? formatTcmItem(allItems.get(idx1)) : "";
             String col2 = idx2 < allItems.size() ? formatTcmItem(allItems.get(idx2)) : "";
-            String col3 = idx3 < allItems.size() ? formatTcmItem(allItems.get(idx3)) : "";
 
             table.addCell(getLeftCell(col1));
             table.addCell(getLeftCell(col2));
-            table.addCell(getLeftCell(col3));
         }
 
         int emptyRow = TCM_ROW_PER_PAGE - (endRow - startRow);
         // 以下空白行
         table.addCell(getLeftCell("（以下空白）"));
         table.addCell(getLeftCell(""));
-        table.addCell(getLeftCell(""));
         emptyRow--;
         for (int i = 0; i < emptyRow; i++) {
-            table.addCell(getLeftCell(""));
             table.addCell(getLeftCell(""));
             table.addCell(getLeftCell(""));
         }
@@ -252,8 +248,7 @@ public class ChinesePrescriptionPdfUtil {
 
         PdfPTable t6 = new PdfPTable(2);
         t6.setWidthPercentage(100);
-        String date = dto.getOrderTime() != null ? dto.getOrderTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                : "";
+        String date = dto.getOrderTime() != null ? dto.getOrderTime().format(DATE_FMT) : "";
         addCellLeft(t6, "联系电话：" + nvl(dto.getPhone()), normalFont(10));
         addCellRight(t6, "开具日期：" + date, normalFont(10));
         document.add(t6);

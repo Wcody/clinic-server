@@ -175,9 +175,11 @@ public class BqPrescriptionController {
     public void printPdf(@RequestParam Integer regId,
                          @RequestParam(defaultValue = "true") Boolean showPrice,
                          @RequestParam(defaultValue = "false") Boolean printCurrent,
-                         @RequestParam(required = false) Integer prescType,
+                         @RequestParam(required = false) String prescType,
                          HttpServletResponse response) throws Exception {
-        byte[] pdfBytes = prescriptionPrintService.generatePdf(regId, showPrice, printCurrent, prescType);
+        Integer prescTypeInt = (prescType == null || prescType.isBlank() || "undefined".equalsIgnoreCase(prescType))
+                ? null : Integer.parseInt(prescType);
+        byte[] pdfBytes = prescriptionPrintService.generatePdf(regId, showPrice, printCurrent, prescTypeInt);
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "inline; filename=prescription.pdf");
         response.setContentLength(pdfBytes.length);

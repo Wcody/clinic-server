@@ -28,6 +28,8 @@ public class PrescriptionPdfUtil {
     private static final BaseFont BASE_FONT_BOLD;
     private static final float ROW_HEIGHT = 18f;
     private static final int LINES_PER_PAGE = 10;
+    // 用法行左缩进：约等于表格总宽度的 10%（A5 可用宽 369pt × 90% × 10% ≈ 33pt）
+    private static final float USAGE_INDENT = 33f;
 
     static {
         try {
@@ -59,6 +61,10 @@ public class PrescriptionPdfUtil {
 
     private static Font boldFont(int size) {
         return new Font(BASE_FONT_BOLD, size + 2);
+    }
+
+    private static Font regularFont(int size) {
+        return new Font(BASE_FONT, size + 2);
     }
 
     // ==================== @Data 实体类 ====================
@@ -217,18 +223,23 @@ public class PrescriptionPdfUtil {
 
     // ==================== 药品表格 ====================
     private static void addDrugTable(Document document, List<PrescriptionItemDTO> pageItems) throws Exception {
-        PdfPTable table = new PdfPTable(4);
+        // 3列：名称 | 规格 | 计价总量（含单位）
+        PdfPTable table = new PdfPTable(3);
         table.setWidthPercentage(90);
         table.setHorizontalAlignment(Element.ALIGN_CENTER);
-        table.setWidths(new float[] { 3, 2.5f, 1, 2 });
+        table.setWidths(new float[] { 3.5f, 2f, 1.5f });
 
         for (PrescriptionItemDTO item : pageItems) {
             addDrugRow(table, item);
+            addUsageRow(table, item);
         }
+        // 以下空白：占一个药品行 + 一个用法行
         addBlankMarkRow(table);
+        addEmptySpanRow(table);
         int fill = LINES_PER_PAGE - pageItems.size() - 1;
         for (int i = 0; i < fill; i++) {
             addEmptyRow(table);
+            addEmptySpanRow(table);
         }
         document.add(table);
     }
@@ -236,32 +247,57 @@ public class PrescriptionPdfUtil {
     private static void addDrugRow(PdfPTable table, PrescriptionItemDTO item) {
         table.addCell(cell(nvl(item.getItemName())));
         table.addCell(cell(nvl(item.getSpec())));
-        String num = item.getTotalNum() != null ? item.getTotalNum().stripTrailingZeros().toPlainString() : "";
-        PdfPCell numCell = cell(num);
+        // 计价总量 + 单位
+        String qty = "";
+        if (item.getTotalNum() != null) {
+            qty = item.getTotalNum().stripTrailingZeros().toPlainString();
+            if (item.getUnit() != null && !item.getUnit().isEmpty()) {
+                qty += item.getUnit();
+            }
+        }
+        PdfPCell numCell = cell(qty);
         numCell.setHorizontalAlignment(Element.ALIGN_CENTER);
         table.addCell(numCell);
-        table.addCell(cell(getUsageText(item)));
+    }
+
+    /** 用法行：跨 3 列，左侧缩进 10% 表宽，非粗体 */
+    private static void addUsageRow(PdfPTable table, PrescriptionItemDTO item) {
+        PdfPCell c = new PdfPCell(new Phrase(getUsageText(item), regularFont(9)));
+        c.setColspan(3);
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setFixedHeight(ROW_HEIGHT);
+        c.setPaddingLeft(USAGE_INDENT);
+        c.setPaddingTop(2);
+        c.setPaddingBottom(2);
+        table.addCell(c);
     }
 
     private static void addBlankMarkRow(PdfPTable table) {
-        for (int col = 0; col < 4; col++) {
-            String txt = col == 0 ? "（以下空白）" : " ";
-            PdfPCell cell = new PdfPCell(new Phrase(txt, normalFont(9)));
-            cell.setBorder(Rectangle.NO_BORDER);
-            cell.setFixedHeight(ROW_HEIGHT);
-            cell.setHorizontalAlignment(col == 0 ? Element.ALIGN_LEFT : Element.ALIGN_CENTER);
-            table.addCell(cell);
-        }
+        PdfPCell c = new PdfPCell(new Phrase("（以下空白）", normalFont(9)));
+        c.setColspan(3);
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setFixedHeight(ROW_HEIGHT);
+        c.setHorizontalAlignment(Element.ALIGN_LEFT);
+        c.setPaddingTop(2);
+        c.setPaddingBottom(2);
+        table.addCell(c);
     }
 
     private static void addEmptyRow(PdfPTable table) {
-        for (int col = 0; col < 4; col++) {
-            PdfPCell cell = new PdfPCell(new Phrase(" ", normalFont(9)));
-            cell.setBorder(Rectangle.NO_BORDER);
-            cell.setFixedHeight(ROW_HEIGHT);
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            table.addCell(cell);
-        }
+        PdfPCell c = new PdfPCell(new Phrase(" ", normalFont(9)));
+        c.setColspan(3);
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setFixedHeight(ROW_HEIGHT);
+        table.addCell(c);
+    }
+
+    /** 空的用法占位行（配合 addEmptyRow / addBlankMarkRow 保持行高一致） */
+    private static void addEmptySpanRow(PdfPTable table) {
+        PdfPCell c = new PdfPCell(new Phrase(" ", normalFont(9)));
+        c.setColspan(3);
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setFixedHeight(ROW_HEIGHT);
+        table.addCell(c);
     }
 
     // ==================== 底部 ====================
@@ -318,20 +354,25 @@ public class PrescriptionPdfUtil {
     }
 
     private static String getUsageText(PrescriptionItemDTO item) {
-        if (item == null || !Byte.valueOf((byte) 1).equals(item.getItemType())) {
-            return nvl(item.getEntrust());
-        }
+        if (item == null) return "";
         StringBuilder sb = new StringBuilder();
-        if (item.getUseWay() != null)
+        if (item.getUseWay() != null && !item.getUseWay().isEmpty())
             sb.append(item.getUseWay());
-        if (item.getSingleDosage() != null && item.getUnit() != null)
-            sb.append(" 每次").append(item.getSingleDosage()).append(item.getUnit());
-        if (item.getFrequency() != null)
+        if (item.getSingleDosage() != null && !item.getSingleDosage().isEmpty()) {
+            sb.append(" 每次").append(item.getSingleDosage());
+            if (item.getUnit() != null && !item.getUnit().isEmpty())
+                sb.append(item.getUnit());
+        }
+        if (item.getFrequency() != null && !item.getFrequency().isEmpty())
             sb.append(" ").append(item.getFrequency());
         if (item.getDays() != null)
             sb.append(" 共").append(item.getDays()).append("天");
-        if (item.getEntrust() != null && !item.getEntrust().isEmpty())
-            sb.append("（").append(item.getEntrust()).append("）");
+        if (item.getEntrust() != null && !item.getEntrust().isEmpty()) {
+            if (sb.length() > 0)
+                sb.append("（").append(item.getEntrust()).append("）");
+            else
+                sb.append(item.getEntrust());
+        }
         return sb.toString();
     }
 
