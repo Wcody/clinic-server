@@ -1,0 +1,438 @@
+/*
+ * 版权声明 Copyright (c) 2026。
+ */
+package com.qkplm.clinic.libcommon.pdf.openpdf;
+
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.*;
+import lombok.Data;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.core.io.ClassPathResource;
+
+/**
+ * 最终版：使用你指定的阿里巴巴健康字体 + 粗体字体文件
+ */
+public class PrescriptionPdfUtil {
+
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy年MM月dd日");
+    private static final BaseFont BASE_FONT;
+    private static final BaseFont BASE_FONT_BOLD;
+    private static final float ROW_HEIGHT = 18f;
+    private static final int LINES_PER_PAGE = 10;
+
+    static {
+        try {
+            // ✅ 正确加载 SpringBoot resources 下的字体（100% 不报错）
+            ClassPathResource regular = new ClassPathResource("fonts/AlibabaHealthFont2.0CN-45R.ttf");
+            ClassPathResource bold = new ClassPathResource("fonts/AlibabaHealthFont2.0CN-85B.ttf");
+
+            BASE_FONT = BaseFont.createFont(
+                    regular.getPath(),
+                    BaseFont.IDENTITY_H,
+                    BaseFont.NOT_EMBEDDED);
+            BASE_FONT_BOLD = BaseFont.createFont(
+                    bold.getPath(),
+                    BaseFont.IDENTITY_H,
+                    BaseFont.NOT_EMBEDDED);
+        } catch (Exception e) {
+            throw new RuntimeException("字体加载失败，请检查路径：/src/main/resources/fonts/", e);
+        }
+    }
+
+    // ==================== 字体工具：粗体使用 BOLD 字体文件 ====================
+    private static Font titleFont(int size) {
+        return new Font(BASE_FONT_BOLD, size + 2);
+    }
+
+    private static Font normalFont(int size) {
+        return new Font(BASE_FONT_BOLD, size + 2);
+    }
+
+    private static Font boldFont(int size) {
+        return new Font(BASE_FONT_BOLD, size + 2);
+    }
+
+    // ==================== @Data 实体类 ====================
+    @Data
+    public static class PrescriptionDTO {
+        private String prescNo;
+        private String patientName;
+        private String gender;
+        private String age;
+        private Integer firstAge;
+        private String ageType;
+        private String idCard;
+        private String clinicNo;
+        private String phone;
+        private LocalDateTime orderTime;
+        private String address;
+        private String allergicHistory;
+        private String diagnosis;
+        private String treatmentSuggest;
+        private String doctor;
+        private java.math.BigDecimal totalPrice;
+        private List<PrescriptionItemDTO> items;
+    }
+
+    @Data
+    public static class PrescriptionItemDTO {
+        private Byte itemType;
+        private String itemName;
+        private String spec;
+        private java.math.BigDecimal totalNum;
+        private String useWay;
+        private String singleDosage;
+        private String unit;
+        private String frequency;
+        private Integer days;
+        private String entrust;
+    }
+
+    // ==================== 公开方法 ====================
+    public static byte[] generatePrescriptionPdf(List<PrescriptionDTO> prescriptionList, boolean showPrice) {
+        if (prescriptionList == null || prescriptionList.isEmpty()) {
+            throw new RuntimeException("处方数据不能为空");
+        }
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Document document = new Document(PageSize.A5, 25, 25, 15, 15);
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+            document.open();
+            for (PrescriptionDTO dto : prescriptionList) {
+                renderOnePrescription(document, writer, dto, showPrice);
+            }
+            document.close();
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("PDF生成失败", e);
+        }
+    }
+
+    private static void renderOnePrescription(Document document, PdfWriter writer, PrescriptionDTO dto,
+            boolean showPrice) throws Exception {
+        List<PrescriptionItemDTO> items = Optional.ofNullable(dto.getItems()).orElse(new ArrayList<>());
+        int total = items.size();
+        int current = 0;
+        int page = 0;
+
+        while (current < total) {
+            page++;
+            if (page > 1)
+                document.newPage();
+            addHeader(document, dto);
+
+            int end = Math.min(current + LINES_PER_PAGE, total);
+            List<PrescriptionItemDTO> pageItems = items.subList(current, end);
+            current = end;
+
+            addDrugTable(document, pageItems);
+            addFooter(writer, dto, showPrice, page, (total + LINES_PER_PAGE - 1) / LINES_PER_PAGE);
+        }
+    }
+
+    // ==================== 头部 ====================
+    private static void addHeader(Document document, PrescriptionDTO dto) throws Exception {
+        PdfPTable tTitle = new PdfPTable(1);
+        tTitle.setWidthPercentage(100);
+        addCellCenter(tTitle, "茂名市高州市石鼓镇九罡村曾俊华卫生室", titleFont(17));
+        document.add(tTitle);
+
+        PdfPTable tSub = new PdfPTable(1);
+        tSub.setWidthPercentage(100);
+        addCellCenter(tSub, "处方笺", titleFont(16));
+        document.add(tSub);
+
+        PdfPTable t3 = new PdfPTable(2);
+        t3.setWidthPercentage(100);
+        t3.setWidths(new float[] { 1, 1 });
+        addCellLeftBottom(t3, "费别：自费", boldFont(10));
+        addCellRightBottom(t3, "处方编号：" + nvl(dto.getPrescNo()), boldFont(10));
+        document.add(t3);
+
+        PdfPTable t4 = new PdfPTable(3);
+        t4.setWidthPercentage(100);
+        t4.setWidths(new float[] { 1, 1, 1 });
+        addCellLeft(t4, "姓名：" + nvl(dto.getPatientName()), normalFont(10));
+        addCellCenter(t4, "性别：" + nvl(dto.getGender()), normalFont(10));
+        addCellRight(t4, "年龄：" + getAgeText(dto), normalFont(10));
+        document.add(t4);
+
+        PdfPTable t5 = new PdfPTable(2);
+        t5.setWidthPercentage(100);
+        addCellLeft(t5, "身份证号：" + nvl(dto.getIdCard()), normalFont(10));
+        addCellRight(t5, "门诊编号：" + nvl(dto.getClinicNo()), normalFont(10));
+        document.add(t5);
+
+        PdfPTable t6 = new PdfPTable(2);
+        t6.setWidthPercentage(100);
+        String date = dto.getOrderTime() != null ? dto.getOrderTime().format(DATE_FMT) : "";
+        addCellLeft(t6, "联系电话：" + nvl(dto.getPhone()), normalFont(10));
+        addCellRight(t6, "开具日期：" + date, normalFont(10));
+        document.add(t6);
+
+        PdfPTable tAddr = new PdfPTable(1);
+        tAddr.setWidthPercentage(100);
+        addCellLeft(tAddr, "地址：" + nvl(dto.getAddress()), normalFont(10));
+        document.add(tAddr);
+
+        PdfPTable tAllergy = new PdfPTable(1);
+        tAllergy.setWidthPercentage(100);
+        String allergy = (dto.getAllergicHistory() == null || dto.getAllergicHistory().isBlank()) ? "无"
+                : dto.getAllergicHistory();
+        addCellLeft(tAllergy, "过敏史：" + allergy, normalFont(10));
+        document.add(tAllergy);
+
+        PdfPTable tDiag = new PdfPTable(1);
+        tDiag.setWidthPercentage(100);
+        addCellLeft(tDiag, "临床诊断：" + nvl(dto.getDiagnosis()), normalFont(10));
+        document.add(tDiag);
+
+        PdfPTable tSuggest = new PdfPTable(1);
+        tSuggest.setWidthPercentage(100);
+        addCellLeft(tSuggest, "治疗建议：" + nvl(dto.getTreatmentSuggest()), normalFont(10));
+        document.add(tSuggest);
+
+        PdfPTable line = new PdfPTable(1);
+        line.setWidthPercentage(100);
+        PdfPCell c = new PdfPCell(new Phrase(""));
+        c.setBorder(Rectangle.BOTTOM);
+        c.setBorderWidth(0.5f);
+        c.setPadding(1);
+        line.addCell(c);
+        document.add(line);
+
+        PdfPTable rp = new PdfPTable(1);
+        rp.setWidthPercentage(100);
+        addCellLeft(rp, "RP", boldFont(14));
+        document.add(rp);
+    }
+
+    // ==================== 药品表格 ====================
+    private static void addDrugTable(Document document, List<PrescriptionItemDTO> pageItems) throws Exception {
+        PdfPTable table = new PdfPTable(4);
+        table.setWidthPercentage(90);
+        table.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.setWidths(new float[] { 3, 2.5f, 1, 2 });
+
+        for (PrescriptionItemDTO item : pageItems) {
+            addDrugRow(table, item);
+        }
+        addBlankMarkRow(table);
+        int fill = LINES_PER_PAGE - pageItems.size() - 1;
+        for (int i = 0; i < fill; i++) {
+            addEmptyRow(table);
+        }
+        document.add(table);
+    }
+
+    private static void addDrugRow(PdfPTable table, PrescriptionItemDTO item) {
+        table.addCell(cell(nvl(item.getItemName())));
+        table.addCell(cell(nvl(item.getSpec())));
+        String num = item.getTotalNum() != null ? item.getTotalNum().stripTrailingZeros().toPlainString() : "";
+        PdfPCell numCell = cell(num);
+        numCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.addCell(numCell);
+        table.addCell(cell(getUsageText(item)));
+    }
+
+    private static void addBlankMarkRow(PdfPTable table) {
+        for (int col = 0; col < 4; col++) {
+            String txt = col == 0 ? "（以下空白）" : " ";
+            PdfPCell cell = new PdfPCell(new Phrase(txt, normalFont(9)));
+            cell.setBorder(Rectangle.NO_BORDER);
+            cell.setFixedHeight(ROW_HEIGHT);
+            cell.setHorizontalAlignment(col == 0 ? Element.ALIGN_LEFT : Element.ALIGN_CENTER);
+            table.addCell(cell);
+        }
+    }
+
+    private static void addEmptyRow(PdfPTable table) {
+        for (int col = 0; col < 4; col++) {
+            PdfPCell cell = new PdfPCell(new Phrase(" ", normalFont(9)));
+            cell.setBorder(Rectangle.NO_BORDER);
+            cell.setFixedHeight(ROW_HEIGHT);
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            table.addCell(cell);
+        }
+    }
+
+    // ==================== 底部 ====================
+    private static void addFooter(PdfWriter writer, PrescriptionDTO dto, boolean showPrice, int currentPage,
+            int totalPage) {
+        PdfContentByte cb = writer.getDirectContent();
+        Rectangle pageSize = writer.getPageSize();
+        float left = 25f;
+        float width = pageSize.getWidth() - 50;
+        float y = pageSize.getBottom() + 40f;
+
+        PdfPTable t1 = new PdfPTable(3);
+        t1.setTotalWidth(width);
+        t1.setLockedWidth(true);
+        t1.setWidths(new float[] { 1, 1, 1 });
+        addCellNoBorder(t1, "审核：", normalFont(9));
+        addCellNoBorder(t1, "调配：", normalFont(9));
+        addCellNoBorder(t1, "核对发药：", normalFont(9));
+        t1.writeSelectedRows(0, -1, left, y, cb);
+        y += t1.getTotalHeight() + 3;
+
+        PdfPTable t2 = new PdfPTable(3);
+        t2.setTotalWidth(width);
+        t2.setLockedWidth(true);
+        t2.setWidths(new float[] { 1, 1, 1 });
+        String priceText = "";
+        if (showPrice && dto.getTotalPrice() != null) {
+            priceText = "¥" + dto.getTotalPrice().stripTrailingZeros().toPlainString();
+        }
+        addCellNoBorder(t2, "医生：" + nvl(dto.getDoctor()), normalFont(9));
+        addCellNoBorder(t2, "总金额：" + priceText, boldFont(9));
+        addCellNoBorder(t2, "医师签名：", normalFont(9));
+        t2.writeSelectedRows(0, -1, left, y, cb);
+        y += t2.getTotalHeight() + 11;
+
+        PdfPTable t3 = new PdfPTable(1);
+        t3.setTotalWidth(width);
+        t3.setLockedWidth(true);
+        PdfPCell pageCell = new PdfPCell(new Phrase("第" + currentPage + "页，共" + totalPage + "页", normalFont(9)));
+        pageCell.setBorder(Rectangle.BOTTOM);
+        pageCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        pageCell.setPadding(4);
+        t3.addCell(pageCell);
+        t3.writeSelectedRows(0, -1, left, y, cb);
+    }
+
+    // ==================== 工具方法 ====================
+    private static PdfPCell cell(String text) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, normalFont(9)));
+        cell.setBorder(Rectangle.NO_BORDER);
+        cell.setPaddingTop(2);
+        cell.setPaddingBottom(2);
+        return cell;
+    }
+
+    private static String getUsageText(PrescriptionItemDTO item) {
+        if (item == null || !Byte.valueOf((byte) 1).equals(item.getItemType())) {
+            return nvl(item.getEntrust());
+        }
+        StringBuilder sb = new StringBuilder();
+        if (item.getUseWay() != null)
+            sb.append(item.getUseWay());
+        if (item.getSingleDosage() != null && item.getUnit() != null)
+            sb.append(" 每次").append(item.getSingleDosage()).append(item.getUnit());
+        if (item.getFrequency() != null)
+            sb.append(" ").append(item.getFrequency());
+        if (item.getDays() != null)
+            sb.append(" 共").append(item.getDays()).append("天");
+        if (item.getEntrust() != null && !item.getEntrust().isEmpty())
+            sb.append("（").append(item.getEntrust()).append("）");
+        return sb.toString();
+    }
+
+    private static String getAgeText(PrescriptionDTO dto) {
+        if (dto.getAge() != null && !dto.getAge().isEmpty())
+            return dto.getAge();
+        if (dto.getFirstAge() == null)
+            return "";
+        String unit = switch (dto.getAgeType() == null ? "1" : dto.getAgeType()) {
+            case "2" -> "月";
+            case "3" -> "天";
+            default -> "岁";
+        };
+        return dto.getFirstAge() + unit;
+    }
+
+    private static String nvl(String s) {
+        return s == null ? "" : s;
+    }
+
+    private static void addCellLeftBottom(PdfPTable t, String txt, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(txt, f));
+        c.setBorder(Rectangle.BOTTOM);
+        c.setBorderWidth(0.5f);
+        c.setHorizontalAlignment(Element.ALIGN_LEFT);
+        c.setPadding(2);
+        t.addCell(c);
+    }
+
+    private static void addCellRightBottom(PdfPTable t, String txt, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(txt, f));
+        c.setBorder(Rectangle.BOTTOM);
+        c.setBorderWidth(0.5f);
+        c.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        c.setPadding(2);
+        t.addCell(c);
+    }
+
+    private static void addCellLeft(PdfPTable t, String txt, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(txt, f));
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setHorizontalAlignment(Element.ALIGN_LEFT);
+        c.setPadding(2);
+        t.addCell(c);
+    }
+
+    private static void addCellCenter(PdfPTable t, String txt, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(txt, f));
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setPadding(2);
+        t.addCell(c);
+    }
+
+    private static void addCellRight(PdfPTable t, String txt, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(txt, f));
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        c.setPadding(2);
+        t.addCell(c);
+    }
+
+    private static void addCellNoBorder(PdfPTable t, String txt, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(txt, f));
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setHorizontalAlignment(Element.ALIGN_LEFT);
+        c.setPadding(0);
+        t.addCell(c);
+    }
+
+    // ==================== 测试 ====================
+    public static void main(String[] args) throws Exception {
+        List<PrescriptionItemDTO> items = new ArrayList<>();
+        for (int i = 1; i <= 15; i++) {
+            PrescriptionItemDTO item = new PrescriptionItemDTO();
+            item.setItemType((byte) 1);
+            item.setItemName("药品" + i);
+            item.setSpec("0.5g×12粒");
+            item.setTotalNum(new java.math.BigDecimal("1"));
+            item.setUseWay("口服");
+            item.setSingleDosage("1");
+            item.setUnit("粒");
+            item.setFrequency("tid");
+            item.setDays(3);
+            items.add(item);
+        }
+
+        PrescriptionDTO dto = new PrescriptionDTO();
+        dto.setPrescNo("R202604250001");
+        dto.setPatientName("测试患者");
+        dto.setGender("男");
+        dto.setAge("45岁");
+        dto.setOrderTime(LocalDateTime.now());
+        dto.setDoctor("张医生");
+        dto.setAllergicHistory("无");
+        dto.setDiagnosis("上呼吸道感染");
+        dto.setTotalPrice(new java.math.BigDecimal("225.00"));
+        dto.setItems(items);
+
+        byte[] pdf = generatePrescriptionPdf(List.of(dto), true);
+        Files.write(Paths.get("prescription_final.pdf"), pdf);
+        System.out.println("PDF 生成完成 ✅");
+    }
+}

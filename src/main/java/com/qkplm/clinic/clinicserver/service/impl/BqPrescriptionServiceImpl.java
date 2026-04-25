@@ -65,7 +65,7 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
     // 获取今天最大处方号,如果初始值1, 则拼接年月+四位流水号，例如25040001
     private String getMaxPrescNo() {
         BqPrescriptionMapper mapper = getBaseMapper();
-        int ret = mapper.getNextPrescNo(BQDateUtils.getTodayStr(), BQDateUtils.getNextDateStr());
+        long ret = mapper.getNextPrescNo(BQDateUtils.getTodayStr(), BQDateUtils.getNextDateStr());
         if (ret < 1000) {
             // 格式化为 4 位流水号（0001）
             String serialNo = String.format("%04d", ret);

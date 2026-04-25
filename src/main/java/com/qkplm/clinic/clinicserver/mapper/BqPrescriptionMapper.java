@@ -23,5 +23,5 @@ import org.apache.ibatis.annotations.Select;
 public interface BqPrescriptionMapper extends IBaqiMapper<BqPrescriptionEntity> {
 
     @Select("SELECT ifnull(max(prescNo),0) + 1 FROM bq_prescription where createdTime between #{startDate} and #{endDate}")
-    Integer getNextPrescNo(String startDate, String endDate);
+    Long getNextPrescNo(String startDate, String endDate);
 }
