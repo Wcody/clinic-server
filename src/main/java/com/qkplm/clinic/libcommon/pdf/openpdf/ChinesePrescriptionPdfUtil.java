@@ -166,47 +166,40 @@ public class ChinesePrescriptionPdfUtil {
 
     private static void addTcmTable(Document document, List<PrescriptionItemDTO> allItems, int startRow, int endRow)
             throws Exception {
-        // 2 列布局，每行 2 味药
-        PdfPTable table = new PdfPTable(2);
+        // 6 列布局，每行 2 味药：药名 | 用量 | 煎法 | 药名 | 用量 | 煎法
+        PdfPTable table = new PdfPTable(6);
         table.setWidthPercentage(95);
         table.setHorizontalAlignment(Element.ALIGN_CENTER);
-        table.setWidths(new float[] { 1, 1 });
+        table.setWidths(new float[] { 2, 1, 1, 2, 1, 1 });
 
         for (int row = startRow; row < endRow; row++) {
             int idx1 = row * 2;
             int idx2 = row * 2 + 1;
+            PrescriptionItemDTO item1 = idx1 < allItems.size() ? allItems.get(idx1) : null;
+            PrescriptionItemDTO item2 = idx2 < allItems.size() ? allItems.get(idx2) : null;
 
-            String col1 = idx1 < allItems.size() ? formatTcmItem(allItems.get(idx1)) : "";
-            String col2 = idx2 < allItems.size() ? formatTcmItem(allItems.get(idx2)) : "";
-
-            table.addCell(getLeftCell(col1));
-            table.addCell(getLeftCell(col2));
+            table.addCell(getLeftCell(item1 != null ? nvl(item1.getItemName()) : ""));
+            table.addCell(getLeftCell(item1 != null ? nvl(item1.getDosage()) : ""));
+            table.addCell(getLeftCell(item1 != null ? nvl(item1.getDecoctWay()) : ""));
+            table.addCell(getLeftCell(item2 != null ? nvl(item2.getItemName()) : ""));
+            table.addCell(getLeftCell(item2 != null ? nvl(item2.getDosage()) : ""));
+            table.addCell(getLeftCell(item2 != null ? nvl(item2.getDecoctWay()) : ""));
         }
 
         int emptyRow = TCM_ROW_PER_PAGE - (endRow - startRow);
         // 以下空白行
         table.addCell(getLeftCell("（以下空白）"));
-        table.addCell(getLeftCell(""));
+        for (int i = 0; i < 5; i++) table.addCell(getLeftCell(""));
         emptyRow--;
         for (int i = 0; i < emptyRow; i++) {
-            table.addCell(getLeftCell(""));
-            table.addCell(getLeftCell(""));
+            for (int j = 0; j < 6; j++) table.addCell(getLeftCell(""));
         }
 
         document.add(table);
     }
 
-    private static String formatTcmItem(PrescriptionItemDTO item) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(nvl(item.getItemName())).append("   ").append(nvl(item.getDosage()));
-        if (item.getDecoctWay() != null && !item.getDecoctWay().isEmpty()) {
-            sb.append("（").append(item.getDecoctWay()).append("）");
-        }
-        return sb.toString();
-    }
-
     private static PdfPCell getLeftCell(String text) {
-        PdfPCell cell = new PdfPCell(new Phrase(text, normalFont(10)));
+        PdfPCell cell = new PdfPCell(new Phrase(text, normalFont(12)));
         cell.setBorder(Rectangle.NO_BORDER);
         cell.setFixedHeight(ROW_HEIGHT);
         cell.setHorizontalAlignment(Element.ALIGN_LEFT);
@@ -217,12 +210,12 @@ public class ChinesePrescriptionPdfUtil {
     private static void addHeader(Document document, PrescriptionDTO dto) throws Exception {
         PdfPTable tTitle = new PdfPTable(1);
         tTitle.setWidthPercentage(100);
-        addCellCenter(tTitle, "茂名市高州市石鼓镇九罡村曾俊华卫生室", titleFont(17));
+        addCellCenter(tTitle, "茂名市高州市石鼓镇九罡村曾俊华卫生室", titleFont(15));
         document.add(tTitle);
 
         PdfPTable tSub = new PdfPTable(1);
         tSub.setWidthPercentage(100);
-        addCellCenter(tSub, "处方笺", titleFont(16));
+        addCellCenter(tSub, "处方笺", titleFont(14));
         document.add(tSub);
 
         PdfPTable t3 = new PdfPTable(2);
@@ -234,7 +227,7 @@ public class ChinesePrescriptionPdfUtil {
 
         PdfPTable t4 = new PdfPTable(3);
         t4.setWidthPercentage(100);
-        t4.setWidths(new float[] { 1, 1, 1 });
+        t4.setWidths(new float[] { 3, 1, 2 });
         addCellLeft(t4, "姓名：" + nvl(dto.getPatientName()), normalFont(10));
         addCellCenter(t4, "性别：" + nvl(dto.getGender()), normalFont(10));
         addCellRight(t4, "年龄：" + getAgeText(dto), normalFont(10));

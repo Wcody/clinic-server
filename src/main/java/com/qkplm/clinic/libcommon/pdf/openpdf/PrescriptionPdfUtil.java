@@ -27,9 +27,7 @@ public class PrescriptionPdfUtil {
     private static final BaseFont BASE_FONT;
     private static final BaseFont BASE_FONT_BOLD;
     private static final float ROW_HEIGHT = 18f;
-    private static final int LINES_PER_PAGE = 10;
-    // 用法行左缩进：约等于表格总宽度的 10%（A5 可用宽 369pt × 90% × 10% ≈ 33pt）
-    private static final float USAGE_INDENT = 33f;
+    private static final int LINES_PER_PAGE = 6;
 
     static {
         try {
@@ -92,6 +90,7 @@ public class PrescriptionPdfUtil {
     @Data
     public static class PrescriptionItemDTO {
         private Byte itemType;
+        private Integer groupNo;
         private String itemName;
         private String spec;
         private java.math.BigDecimal totalNum;
@@ -111,9 +110,18 @@ public class PrescriptionPdfUtil {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.A5, 25, 25, 15, 15);
             PdfWriter writer = PdfWriter.getInstance(document, out);
+            PrescriptionPageEvent pageEvent = new PrescriptionPageEvent();
+            writer.setPageEvent(pageEvent);
             document.open();
+            boolean first = true;
             for (PrescriptionDTO dto : prescriptionList) {
-                renderOnePrescription(document, writer, dto, showPrice);
+                List<PrescriptionItemDTO> items = Optional.ofNullable(dto.getItems()).orElse(new ArrayList<>());
+                int total = items.size();
+                int totalPages = Math.max(1, (total + LINES_PER_PAGE - 1) / LINES_PER_PAGE);
+                if (!first) document.newPage();
+                first = false;
+                pageEvent.reset(dto, showPrice, totalPages);
+                renderOnePrescription(document, dto);
             }
             document.close();
             return out.toByteArray();
@@ -122,25 +130,19 @@ public class PrescriptionPdfUtil {
         }
     }
 
-    private static void renderOnePrescription(Document document, PdfWriter writer, PrescriptionDTO dto,
-            boolean showPrice) throws Exception {
+    private static void renderOnePrescription(Document document, PrescriptionDTO dto) throws Exception {
         List<PrescriptionItemDTO> items = Optional.ofNullable(dto.getItems()).orElse(new ArrayList<>());
         int total = items.size();
         int current = 0;
-        int page = 0;
+        boolean firstPage = true;
 
         while (current < total) {
-            page++;
-            if (page > 1)
-                document.newPage();
+            if (!firstPage) document.newPage();
+            firstPage = false;
             addHeader(document, dto);
-
             int end = Math.min(current + LINES_PER_PAGE, total);
-            List<PrescriptionItemDTO> pageItems = items.subList(current, end);
+            addDrugTable(document, items.subList(current, end));
             current = end;
-
-            addDrugTable(document, pageItems);
-            addFooter(writer, dto, showPrice, page, (total + LINES_PER_PAGE - 1) / LINES_PER_PAGE);
         }
     }
 
@@ -148,62 +150,62 @@ public class PrescriptionPdfUtil {
     private static void addHeader(Document document, PrescriptionDTO dto) throws Exception {
         PdfPTable tTitle = new PdfPTable(1);
         tTitle.setWidthPercentage(100);
-        addCellCenter(tTitle, "茂名市高州市石鼓镇九罡村曾俊华卫生室", titleFont(17));
+        addCellCenter(tTitle, "茂名市高州市石鼓镇九罡村曾俊华卫生室", titleFont(13));
         document.add(tTitle);
 
         PdfPTable tSub = new PdfPTable(1);
         tSub.setWidthPercentage(100);
-        addCellCenter(tSub, "处方笺", titleFont(16));
+        addCellCenter(tSub, "处方笺", titleFont(12));
         document.add(tSub);
 
         PdfPTable t3 = new PdfPTable(2);
         t3.setWidthPercentage(100);
         t3.setWidths(new float[] { 1, 1 });
-        addCellLeftBottom(t3, "费别：自费", boldFont(10));
-        addCellRightBottom(t3, "处方编号：" + nvl(dto.getPrescNo()), boldFont(10));
+        addCellLeftBottom(t3, "费别：自费", boldFont(8));
+        addCellRightBottom(t3, "处方编号：" + nvl(dto.getPrescNo()), boldFont(8));
         document.add(t3);
 
         PdfPTable t4 = new PdfPTable(3);
         t4.setWidthPercentage(100);
-        t4.setWidths(new float[] { 1, 1, 1 });
-        addCellLeft(t4, "姓名：" + nvl(dto.getPatientName()), normalFont(10));
-        addCellCenter(t4, "性别：" + nvl(dto.getGender()), normalFont(10));
-        addCellRight(t4, "年龄：" + getAgeText(dto), normalFont(10));
+        t4.setWidths(new float[] { 3, 1, 2 });
+        addCellLeft(t4, "姓名：" + nvl(dto.getPatientName()), normalFont(8));
+        addCellCenter(t4, "性别：" + nvl(dto.getGender()), normalFont(8));
+        addCellRight(t4, "年龄：" + getAgeText(dto), normalFont(8));
         document.add(t4);
 
         PdfPTable t5 = new PdfPTable(2);
         t5.setWidthPercentage(100);
-        addCellLeft(t5, "身份证号：" + nvl(dto.getIdCard()), normalFont(10));
-        addCellRight(t5, "门诊编号：" + nvl(dto.getClinicNo()), normalFont(10));
+        addCellLeft(t5, "身份证号：" + nvl(dto.getIdCard()), normalFont(8));
+        addCellRight(t5, "门诊编号：" + nvl(dto.getClinicNo()), normalFont(8));
         document.add(t5);
 
         PdfPTable t6 = new PdfPTable(2);
         t6.setWidthPercentage(100);
         String date = dto.getOrderTime() != null ? dto.getOrderTime().format(DATE_FMT) : "";
-        addCellLeft(t6, "联系电话：" + nvl(dto.getPhone()), normalFont(10));
-        addCellRight(t6, "开具日期：" + date, normalFont(10));
+        addCellLeft(t6, "联系电话：" + nvl(dto.getPhone()), normalFont(8));
+        addCellRight(t6, "开具日期：" + date, normalFont(8));
         document.add(t6);
 
         PdfPTable tAddr = new PdfPTable(1);
         tAddr.setWidthPercentage(100);
-        addCellLeft(tAddr, "地址：" + nvl(dto.getAddress()), normalFont(10));
+        addCellLeft(tAddr, "地址：" + nvl(dto.getAddress()), normalFont(8));
         document.add(tAddr);
 
         PdfPTable tAllergy = new PdfPTable(1);
         tAllergy.setWidthPercentage(100);
         String allergy = (dto.getAllergicHistory() == null || dto.getAllergicHistory().isBlank()) ? "无"
                 : dto.getAllergicHistory();
-        addCellLeft(tAllergy, "过敏史：" + allergy, normalFont(10));
+        addCellLeft(tAllergy, "过敏史：" + allergy, normalFont(8));
         document.add(tAllergy);
 
         PdfPTable tDiag = new PdfPTable(1);
         tDiag.setWidthPercentage(100);
-        addCellLeft(tDiag, "临床诊断：" + nvl(dto.getDiagnosis()), normalFont(10));
+        addCellLeft(tDiag, "临床诊断：" + nvl(dto.getDiagnosis()), normalFont(8));
         document.add(tDiag);
 
         PdfPTable tSuggest = new PdfPTable(1);
         tSuggest.setWidthPercentage(100);
-        addCellLeft(tSuggest, "治疗建议：" + nvl(dto.getTreatmentSuggest()), normalFont(10));
+        addCellLeft(tSuggest, "治疗建议：" + nvl(dto.getTreatmentSuggest()), normalFont(8));
         document.add(tSuggest);
 
         PdfPTable line = new PdfPTable(1);
@@ -217,21 +219,24 @@ public class PrescriptionPdfUtil {
 
         PdfPTable rp = new PdfPTable(1);
         rp.setWidthPercentage(100);
-        addCellLeft(rp, "RP", boldFont(14));
+        addCellLeft(rp, "RP", boldFont(12));
         document.add(rp);
     }
 
     // ==================== 药品表格 ====================
     private static void addDrugTable(Document document, List<PrescriptionItemDTO> pageItems) throws Exception {
-        // 3列：名称 | 规格 | 计价总量（含单位）
-        PdfPTable table = new PdfPTable(3);
+        // 4列：组号 | 名称 | 规格 | 用量
+        PdfPTable table = new PdfPTable(4);
         table.setWidthPercentage(90);
         table.setHorizontalAlignment(Element.ALIGN_CENTER);
-        table.setWidths(new float[] { 3.5f, 2f, 1.5f });
+        table.setWidths(new float[] { 0.6f, 3.5f, 2f, 1.5f });
 
+        Integer prevGroupNo = null;
         for (PrescriptionItemDTO item : pageItems) {
-            addDrugRow(table, item);
+            boolean showGroup = item.getGroupNo() != null && !item.getGroupNo().equals(prevGroupNo);
+            addDrugRow(table, item, showGroup);
             addUsageRow(table, item);
+            prevGroupNo = item.getGroupNo();
         }
         // 以下空白：占一个药品行 + 一个用法行
         addBlankMarkRow(table);
@@ -244,37 +249,38 @@ public class PrescriptionPdfUtil {
         document.add(table);
     }
 
-    private static void addDrugRow(PdfPTable table, PrescriptionItemDTO item) {
+    private static void addDrugRow(PdfPTable table, PrescriptionItemDTO item, boolean showGroup) {
+        String groupLabel = showGroup && item.getGroupNo() != null ? item.getGroupNo() + "：" : "";
+        PdfPCell groupCell = cell(groupLabel);
+        groupCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.addCell(groupCell);
         table.addCell(cell(nvl(item.getItemName())));
         table.addCell(cell(nvl(item.getSpec())));
-        // 计价总量 + 单位
-        String qty = "";
-        if (item.getTotalNum() != null) {
-            qty = item.getTotalNum().stripTrailingZeros().toPlainString();
-            if (item.getUnit() != null && !item.getUnit().isEmpty()) {
-                qty += item.getUnit();
-            }
+        String qty = trimNumber(item.getSingleDosage());
+        if (item.getUnit() != null && !item.getUnit().isEmpty()) {
+            qty += item.getUnit();
         }
         PdfPCell numCell = cell(qty);
         numCell.setHorizontalAlignment(Element.ALIGN_CENTER);
         table.addCell(numCell);
     }
 
-    /** 用法行：跨 3 列，左侧缩进 10% 表宽，非粗体 */
+    /** 用法行：跨 4 列，右对齐，非粗体 */
     private static void addUsageRow(PdfPTable table, PrescriptionItemDTO item) {
-        PdfPCell c = new PdfPCell(new Phrase(getUsageText(item), regularFont(9)));
-        c.setColspan(3);
+        PdfPCell c = new PdfPCell(new Phrase(getUsageText(item), regularFont(10)));
+        c.setColspan(4);
         c.setBorder(Rectangle.NO_BORDER);
         c.setFixedHeight(ROW_HEIGHT);
-        c.setPaddingLeft(USAGE_INDENT);
+        c.setPaddingRight(6);
         c.setPaddingTop(2);
         c.setPaddingBottom(2);
+        c.setHorizontalAlignment(Element.ALIGN_RIGHT);
         table.addCell(c);
     }
 
     private static void addBlankMarkRow(PdfPTable table) {
-        PdfPCell c = new PdfPCell(new Phrase("（以下空白）", normalFont(9)));
-        c.setColspan(3);
+        PdfPCell c = new PdfPCell(new Phrase("（以下空白）", normalFont(10)));
+        c.setColspan(4);
         c.setBorder(Rectangle.NO_BORDER);
         c.setFixedHeight(ROW_HEIGHT);
         c.setHorizontalAlignment(Element.ALIGN_LEFT);
@@ -284,8 +290,8 @@ public class PrescriptionPdfUtil {
     }
 
     private static void addEmptyRow(PdfPTable table) {
-        PdfPCell c = new PdfPCell(new Phrase(" ", normalFont(9)));
-        c.setColspan(3);
+        PdfPCell c = new PdfPCell(new Phrase(" ", normalFont(10)));
+        c.setColspan(4);
         c.setBorder(Rectangle.NO_BORDER);
         c.setFixedHeight(ROW_HEIGHT);
         table.addCell(c);
@@ -293,18 +299,16 @@ public class PrescriptionPdfUtil {
 
     /** 空的用法占位行（配合 addEmptyRow / addBlankMarkRow 保持行高一致） */
     private static void addEmptySpanRow(PdfPTable table) {
-        PdfPCell c = new PdfPCell(new Phrase(" ", normalFont(9)));
-        c.setColspan(3);
+        PdfPCell c = new PdfPCell(new Phrase(" ", normalFont(10)));
+        c.setColspan(4);
         c.setBorder(Rectangle.NO_BORDER);
         c.setFixedHeight(ROW_HEIGHT);
         table.addCell(c);
     }
 
     // ==================== 底部 ====================
-    private static void addFooter(PdfWriter writer, PrescriptionDTO dto, boolean showPrice, int currentPage,
-            int totalPage) {
-        PdfContentByte cb = writer.getDirectContent();
-        Rectangle pageSize = writer.getPageSize();
+    private static void addFooter(PdfContentByte cb, Rectangle pageSize, PrescriptionDTO dto,
+            boolean showPrice, int currentPage, int totalPage) {
         float left = 25f;
         float width = pageSize.getWidth() - 50;
         float y = pageSize.getBottom() + 40f;
@@ -313,9 +317,9 @@ public class PrescriptionPdfUtil {
         t1.setTotalWidth(width);
         t1.setLockedWidth(true);
         t1.setWidths(new float[] { 1, 1, 1 });
-        addCellNoBorder(t1, "审核：", normalFont(9));
-        addCellNoBorder(t1, "调配：", normalFont(9));
-        addCellNoBorder(t1, "核对发药：", normalFont(9));
+        addCellNoBorder(t1, "审核：", normalFont(7));
+        addCellNoBorder(t1, "调配：", normalFont(7));
+        addCellNoBorder(t1, "核对发药：", normalFont(7));
         t1.writeSelectedRows(0, -1, left, y, cb);
         y += t1.getTotalHeight() + 3;
 
@@ -327,16 +331,16 @@ public class PrescriptionPdfUtil {
         if (showPrice && dto.getTotalPrice() != null) {
             priceText = "¥" + dto.getTotalPrice().stripTrailingZeros().toPlainString();
         }
-        addCellNoBorder(t2, "医生：" + nvl(dto.getDoctor()), normalFont(9));
-        addCellNoBorder(t2, "总金额：" + priceText, boldFont(9));
-        addCellNoBorder(t2, "医师签名：", normalFont(9));
+        addCellNoBorder(t2, "医生：" + nvl(dto.getDoctor()), normalFont(7));
+        addCellNoBorder(t2, "总金额：" + priceText, boldFont(7));
+        addCellNoBorder(t2, "医师签名：", normalFont(7));
         t2.writeSelectedRows(0, -1, left, y, cb);
         y += t2.getTotalHeight() + 11;
 
         PdfPTable t3 = new PdfPTable(1);
         t3.setTotalWidth(width);
         t3.setLockedWidth(true);
-        PdfPCell pageCell = new PdfPCell(new Phrase("第" + currentPage + "页，共" + totalPage + "页", normalFont(9)));
+        PdfPCell pageCell = new PdfPCell(new Phrase("第" + currentPage + "页，共" + totalPage + "页", normalFont(7)));
         pageCell.setBorder(Rectangle.BOTTOM);
         pageCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         pageCell.setPadding(4);
@@ -346,11 +350,20 @@ public class PrescriptionPdfUtil {
 
     // ==================== 工具方法 ====================
     private static PdfPCell cell(String text) {
-        PdfPCell cell = new PdfPCell(new Phrase(text, normalFont(9)));
+        PdfPCell cell = new PdfPCell(new Phrase(text, normalFont(10)));
         cell.setBorder(Rectangle.NO_BORDER);
         cell.setPaddingTop(2);
         cell.setPaddingBottom(2);
         return cell;
+    }
+
+    private static String trimNumber(String s) {
+        if (s == null || s.isEmpty()) return s == null ? "" : s;
+        try {
+            return new java.math.BigDecimal(s).stripTrailingZeros().toPlainString();
+        } catch (NumberFormatException e) {
+            return s;
+        }
     }
 
     private static String getUsageText(PrescriptionItemDTO item) {
@@ -359,7 +372,7 @@ public class PrescriptionPdfUtil {
         if (item.getUseWay() != null && !item.getUseWay().isEmpty())
             sb.append(item.getUseWay());
         if (item.getSingleDosage() != null && !item.getSingleDosage().isEmpty()) {
-            sb.append(" 每次").append(item.getSingleDosage());
+            sb.append(" 每次").append(trimNumber(item.getSingleDosage()));
             if (item.getUnit() != null && !item.getUnit().isEmpty())
                 sb.append(item.getUnit());
         }
@@ -441,6 +454,28 @@ public class PrescriptionPdfUtil {
         c.setHorizontalAlignment(Element.ALIGN_LEFT);
         c.setPadding(0);
         t.addCell(c);
+    }
+
+    // ==================== 页脚事件 ====================
+    static class PrescriptionPageEvent extends com.lowagie.text.pdf.PdfPageEventHelper {
+        private PrescriptionDTO dto;
+        private boolean showPrice;
+        private int totalPages;
+        private int pageIndex;
+
+        void reset(PrescriptionDTO dto, boolean showPrice, int totalPages) {
+            this.dto = dto;
+            this.showPrice = showPrice;
+            this.totalPages = totalPages;
+            this.pageIndex = 0;
+        }
+
+        @Override
+        public void onEndPage(PdfWriter writer, Document document) {
+            if (dto == null) return;
+            pageIndex++;
+            addFooter(writer.getDirectContent(), writer.getPageSize(), dto, showPrice, pageIndex, totalPages);
+        }
     }
 
     // ==================== 测试 ====================

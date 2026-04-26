@@ -10,6 +10,8 @@ import com.lowagie.text.pdf.PdfCopy;
 import com.lowagie.text.pdf.PdfReader;
 import com.qkplm.clinic.clinicserver.dtos.BqPrescriptionPrintVo;
 import com.qkplm.clinic.clinicserver.entity.BqPrescriptionItemEntity;
+import com.qkplm.clinic.clinicserver.entity.BqMedicalDictionaryEntity;
+import com.qkplm.clinic.clinicserver.mapper.BqMedicalDictionaryMapper;
 import com.qkplm.clinic.clinicserver.mapper.BqPrescriptionItemMapper;
 import com.qkplm.clinic.clinicserver.mapper.BqPrescriptionMapper;
 import com.qkplm.clinic.libcommon.pdf.openpdf.ChinesePrescriptionPdfUtil;
@@ -33,6 +35,7 @@ public class BqPrescriptionPrintService {
 
     private final BqPrescriptionMapper prescriptionMapper;
     private final BqPrescriptionItemMapper itemMapper;
+    private final BqMedicalDictionaryMapper dictionaryMapper;
 
     // ==================== 公开入口 ====================
 
@@ -123,15 +126,17 @@ public class BqPrescriptionPrintService {
         dto.setDoctor(h.getDoctor());
         dto.setTotalPrice(h.getTotalPrice());
 
+        Map<String, String> unitMap = buildUnitMap();
         dto.setItems(items.stream().map(item -> {
             PrescriptionPdfUtil.PrescriptionItemDTO d = new PrescriptionPdfUtil.PrescriptionItemDTO();
             d.setItemType(item.getItemType());
+            d.setGroupNo(item.getGroupNo());
             d.setItemName(item.getItemName());
             d.setSpec(item.getSpec());
             d.setTotalNum(item.getTotalNum());
             d.setUseWay(item.getUseWay());
             d.setSingleDosage(item.getSingleDosage());
-            d.setUnit(item.getUnit());
+            d.setUnit(resolveUnit(item.getUnit(), item.getUnitId(), unitMap));
             d.setFrequency(item.getFrequency());
             d.setDays(item.getDays());
             d.setEntrust(item.getEntrust());
@@ -177,14 +182,24 @@ public class BqPrescriptionPrintService {
         dto.setDailyDosage(nvl(h.getUsageTypeName()));
         dto.setMedicalAdvice(h.getRecommendation());
 
+        Map<String, String> unitMap = buildUnitMap();
+        Map<String, String> decoWayMap = dictionaryMapper.selectList(
+                new LambdaQueryWrapper<BqMedicalDictionaryEntity>()
+                        .eq(BqMedicalDictionaryEntity::getDictType, 5))
+                .stream()
+                .collect(Collectors.toMap(
+                        e -> String.valueOf(e.getId()),
+                        BqMedicalDictionaryEntity::getName,
+                        (a, b) -> a));
+
         dto.setItems(items.stream().map(item -> {
             ChinesePrescriptionPdfUtil.PrescriptionItemDTO d =
                     new ChinesePrescriptionPdfUtil.PrescriptionItemDTO();
             d.setItemType(item.getItemType());
             d.setItemName(item.getItemName());
             // 中药剂量 = 单次用量 + 单位（如 "10" + "g" = "10g"）
-            d.setDosage(nvl(item.getSingleDosage()) + nvl(item.getUnit()));
-            d.setDecoctWay(item.getDecoWay());
+            d.setDosage(trimNumber(item.getSingleDosage()) + resolveUnit(item.getUnit(), item.getUnitId(), unitMap));
+            d.setDecoctWay(decoWayMap.getOrDefault(nvl(item.getDecoWay()), ""));
             return d;
         }).collect(Collectors.toList()));
 
@@ -214,6 +229,32 @@ public class BqPrescriptionPrintService {
 /** 门诊编号：取患者档案号 */
     private String clinicNo(BqPrescriptionPrintVo h) {
         return h.getArchiveNo() != null ? h.getArchiveNo() : "";
+    }
+
+    private Map<String, String> buildUnitMap() {
+        return dictionaryMapper.selectList(
+                new LambdaQueryWrapper<BqMedicalDictionaryEntity>()
+                        .eq(BqMedicalDictionaryEntity::getDictType, 3))
+                .stream()
+                .collect(Collectors.toMap(
+                        e -> String.valueOf(e.getId()),
+                        BqMedicalDictionaryEntity::getName,
+                        (a, b) -> a));
+    }
+
+    private String resolveUnit(String unit, Integer unitId, Map<String, String> unitMap) {
+        if (unit != null && !unit.isEmpty()) return unit;
+        if (unitId == null) return "";
+        return unitMap.getOrDefault(String.valueOf(unitId), "");
+    }
+
+    private String trimNumber(String s) {
+        if (s == null || s.isEmpty()) return s == null ? "" : s;
+        try {
+            return new java.math.BigDecimal(s).stripTrailingZeros().toPlainString();
+        } catch (NumberFormatException e) {
+            return s;
+        }
     }
 
     private String nvl(String s) {
