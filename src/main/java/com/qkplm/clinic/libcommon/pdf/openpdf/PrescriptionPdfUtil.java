@@ -71,8 +71,8 @@ public class PrescriptionPdfUtil {
         private String prescNo;
         private String patientName;
         private String gender;
-        private String age;
         private Integer firstAge;
+        private Integer lastAge;
         private String ageType;
         private String idCard;
         private String clinicNo;
@@ -94,6 +94,7 @@ public class PrescriptionPdfUtil {
         private String itemName;
         private String spec;
         private java.math.BigDecimal totalNum;
+        private String priceUnit;
         private String useWay;
         private String singleDosage;
         private String unit;
@@ -256,9 +257,9 @@ public class PrescriptionPdfUtil {
         table.addCell(groupCell);
         table.addCell(cell(nvl(item.getItemName())));
         table.addCell(cell(nvl(item.getSpec())));
-        String qty = trimNumber(item.getSingleDosage());
-        if (item.getUnit() != null && !item.getUnit().isEmpty()) {
-            qty += item.getUnit();
+        String qty = item.getTotalNum() != null ? item.getTotalNum().stripTrailingZeros().toPlainString() : "";
+        if (item.getPriceUnit() != null && !item.getPriceUnit().isEmpty()) {
+            qty += item.getPriceUnit();
         }
         PdfPCell numCell = cell(qty);
         numCell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -390,16 +391,14 @@ public class PrescriptionPdfUtil {
     }
 
     private static String getAgeText(PrescriptionDTO dto) {
-        if (dto.getAge() != null && !dto.getAge().isEmpty())
-            return dto.getAge();
-        if (dto.getFirstAge() == null)
-            return "";
-        String unit = switch (dto.getAgeType() == null ? "1" : dto.getAgeType()) {
-            case "2" -> "月";
-            case "3" -> "天";
-            default -> "岁";
-        };
-        return dto.getFirstAge() + unit;
+        if (dto.getFirstAge() == null) return "";
+        int first = dto.getFirstAge();
+        int last = dto.getLastAge() != null ? dto.getLastAge() : 0;
+        // ageType 1: firstAge=岁, lastAge=月；ageType 2: firstAge=月, lastAge=天
+        if ("2".equals(dto.getAgeType())) {
+            return last > 0 ? first + "月" + last + "天" : first + "月";
+        }
+        return last > 0 ? first + "岁" + last + "月" : first + "岁";
     }
 
     private static String nvl(String s) {
@@ -499,7 +498,7 @@ public class PrescriptionPdfUtil {
         dto.setPrescNo("R202604250001");
         dto.setPatientName("测试患者");
         dto.setGender("男");
-        dto.setAge("45岁");
+        dto.setFirstAge(45);
         dto.setOrderTime(LocalDateTime.now());
         dto.setDoctor("张医生");
         dto.setAllergicHistory("无");

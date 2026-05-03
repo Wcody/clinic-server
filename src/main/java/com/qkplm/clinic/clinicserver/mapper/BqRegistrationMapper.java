@@ -6,6 +6,7 @@
 
 package com.qkplm.clinic.clinicserver.mapper;
 
+import com.qkplm.clinic.clinicserver.dtos.BqRegistrationWithDiagnosisVo;
 import com.qkplm.clinic.clinicserver.entity.BqRegistrationEntity;
 import com.qkplm.clinic.libcommon.mybatis.base.IBaqiMapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -52,9 +53,9 @@ public interface BqRegistrationMapper extends IBaqiMapper<BqRegistrationEntity> 
             @Param("endTime") LocalDateTime endTime);
 
     /**
-     * 就诊记录分页查询（关联患者表获取冗余字段）
+     * 就诊记录分页查询（关联患者表、病历表）
      */
-    List<BqRegistrationEntity> selectVisitRecordList(
+    List<BqRegistrationWithDiagnosisVo> selectVisitRecordList(
             @Param("patientName") String patientName,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
@@ -69,5 +70,27 @@ public interface BqRegistrationMapper extends IBaqiMapper<BqRegistrationEntity> 
             @Param("patientName") String patientName,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
+            @Param("status") String status);
+
+    /**
+     * 收费列表分页查询（关联病历表）
+     */
+    List<BqRegistrationWithDiagnosisVo> selectChargeList(
+            @Param("patientName") String patientName,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("statusFee") String statusFee,
+            @Param("status") String status,
+            @Param("offset") long offset,
+            @Param("limit") int limit);
+
+    /**
+     * 收费列表总数查询
+     */
+    Long countChargeList(
+            @Param("patientName") String patientName,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("statusFee") String statusFee,
             @Param("status") String status);
 }

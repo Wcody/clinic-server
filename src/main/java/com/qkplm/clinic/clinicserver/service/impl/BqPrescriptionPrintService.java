@@ -72,6 +72,7 @@ public class BqPrescriptionPrintService {
                 new LambdaQueryWrapper<BqPrescriptionItemEntity>()
                         .in(BqPrescriptionItemEntity::getPrescId, prescIds)
                         .orderByAsc(BqPrescriptionItemEntity::getPrescId)
+                        .orderByAsc(BqPrescriptionItemEntity::getSort)
                         .orderByAsc(BqPrescriptionItemEntity::getId));
         Map<Integer, List<BqPrescriptionItemEntity>> itemMap = allItems.stream()
                 .collect(Collectors.groupingBy(BqPrescriptionItemEntity::getPrescId));
@@ -112,8 +113,8 @@ public class BqPrescriptionPrintService {
         dto.setPrescNo(h.getPrescNo());
         dto.setPatientName(h.getPatientName());
         dto.setGender(h.getGender());
-        dto.setAge(h.getAge());
         dto.setFirstAge(h.getFirstAge());
+        dto.setLastAge(h.getLastAge());
         dto.setAgeType(h.getAgeType() != null ? String.valueOf(h.getAgeType()) : null);
         dto.setIdCard(h.getIdCard());
         dto.setClinicNo(clinicNo(h));
@@ -127,6 +128,8 @@ public class BqPrescriptionPrintService {
         dto.setTotalPrice(h.getTotalPrice());
 
         Map<String, String> unitMap = buildUnitMap();
+        Map<String, String> useWayMap = buildDictMap(1);
+        Map<String, String> frequencyMap = buildDictMap(2);
         dto.setItems(items.stream().map(item -> {
             PrescriptionPdfUtil.PrescriptionItemDTO d = new PrescriptionPdfUtil.PrescriptionItemDTO();
             d.setItemType(item.getItemType());
@@ -134,10 +137,11 @@ public class BqPrescriptionPrintService {
             d.setItemName(item.getItemName());
             d.setSpec(item.getSpec());
             d.setTotalNum(item.getTotalNum());
-            d.setUseWay(item.getUseWay());
+            d.setPriceUnit(resolveUnit(item.getPriceUnit(), item.getPriceUnitId(), unitMap));
+            d.setUseWay(resolveByIdOrName(item.getUseWay(), useWayMap));
             d.setSingleDosage(item.getSingleDosage());
             d.setUnit(resolveUnit(item.getUnit(), item.getUnitId(), unitMap));
-            d.setFrequency(item.getFrequency());
+            d.setFrequency(resolveByIdOrName(item.getFrequency(), frequencyMap));
             d.setDays(item.getDays());
             d.setEntrust(item.getEntrust());
             return d;
@@ -155,8 +159,8 @@ public class BqPrescriptionPrintService {
         dto.setPrescNo(h.getPrescNo());
         dto.setPatientName(h.getPatientName());
         dto.setGender(h.getGender());
-        dto.setAge(h.getAge());
         dto.setFirstAge(h.getFirstAge());
+        dto.setLastAge(h.getLastAge());
         dto.setAgeType(h.getAgeType() != null ? String.valueOf(h.getAgeType()) : null);
         dto.setIdCard(h.getIdCard());
         dto.setClinicNo(clinicNo(h));
@@ -183,14 +187,7 @@ public class BqPrescriptionPrintService {
         dto.setMedicalAdvice(h.getRecommendation());
 
         Map<String, String> unitMap = buildUnitMap();
-        Map<String, String> decoWayMap = dictionaryMapper.selectList(
-                new LambdaQueryWrapper<BqMedicalDictionaryEntity>()
-                        .eq(BqMedicalDictionaryEntity::getDictType, 5))
-                .stream()
-                .collect(Collectors.toMap(
-                        e -> String.valueOf(e.getId()),
-                        BqMedicalDictionaryEntity::getName,
-                        (a, b) -> a));
+        Map<String, String> decoWayMap = buildDictMap(5);
 
         dto.setItems(items.stream().map(item -> {
             ChinesePrescriptionPdfUtil.PrescriptionItemDTO d =
@@ -199,7 +196,7 @@ public class BqPrescriptionPrintService {
             d.setItemName(item.getItemName());
             // 中药剂量 = 单次用量 + 单位（如 "10" + "g" = "10g"）
             d.setDosage(trimNumber(item.getSingleDosage()) + resolveUnit(item.getUnit(), item.getUnitId(), unitMap));
-            d.setDecoctWay(decoWayMap.getOrDefault(nvl(item.getDecoWay()), ""));
+            d.setDecoctWay(resolveByIdOrName(nvl(item.getDecoWay()), decoWayMap));
             return d;
         }).collect(Collectors.toList()));
 
@@ -232,14 +229,25 @@ public class BqPrescriptionPrintService {
     }
 
     private Map<String, String> buildUnitMap() {
+        return buildDictMap(3);
+    }
+
+    private Map<String, String> buildDictMap(int dictType) {
         return dictionaryMapper.selectList(
                 new LambdaQueryWrapper<BqMedicalDictionaryEntity>()
-                        .eq(BqMedicalDictionaryEntity::getDictType, 3))
+                        .eq(BqMedicalDictionaryEntity::getDictType, dictType))
                 .stream()
                 .collect(Collectors.toMap(
                         e -> String.valueOf(e.getId()),
                         BqMedicalDictionaryEntity::getName,
                         (a, b) -> a));
+    }
+
+    /** 兼容历史数据：值是纯数字则按ID查名称，否则直接返回（已是名称） */
+    private String resolveByIdOrName(String value, Map<String, String> map) {
+        if (value == null || value.isEmpty()) return "";
+        if (value.matches("\\d+")) return map.getOrDefault(value, value);
+        return value;
     }
 
     private String resolveUnit(String unit, Integer unitId, Map<String, String> unitMap) {

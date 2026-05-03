@@ -1,11 +1,10 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月26日
+* 首创日期： 2026年4月29日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.qkplm.clinic.libcommon.entity.BQIdBaseEntity;
 import java.math.BigDecimal;
@@ -18,7 +17,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>处方明细表 实体类</p>
-* @datetime 2026-4-26 7:17
+* @datetime 2026-4-29 17:45
 */
 @Getter
 @Setter
@@ -133,11 +132,15 @@ public class BqPrescriptionItemEntity extends BQIdBaseEntity {
     /**
      * 煎药方式
      */
-    @TableField(value = "decoWay")
     private String decoWay;
 
     /**
      * 处方组号，相同组号回排在一起
      */
     private Integer groupNo;
+
+    /**
+     * 处方明细项的顺序，打印时会用到
+     */
+    private Integer sort;
 }

@@ -21,7 +21,10 @@ import java.util.Collection;
 
 /**
  * @author Wcke
- * @description <p>处方明细表 前端控制器</p>
+ * @description
+ *              <p>
+ *              处方明细表 前端控制器
+ *              </p>
  * @datetime 2026-4-18 0:54
  */
 @RestController
@@ -36,8 +39,8 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 根据ID获取单条记录
-    */
+     * 根据ID获取单条记录
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "查询")
     @RequestMapping(value = "/get/{id}", method = RequestMethod.GET)
@@ -50,13 +53,13 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 新增单条记录
-    */
+     * 新增单条记录
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "新增")
     @RequestMapping(value = "/save", method = RequestMethod.POST)
     public BqPrescriptionItemEntity save(@RequestBody BqPrescriptionItemEntity prescriptionItem) {
-        prescriptionItem.setEid(null);
+        prescriptionItem.setId(null);
         if (!prescriptionItemService.save(prescriptionItem)) {
             throw new BQApiException("新增失败");
         }
@@ -64,8 +67,8 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 批量新增记录，默认单次执行1000条
-    */
+     * 批量新增记录，默认单次执行1000条
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "批量新增")
     @RequestMapping(value = "/saveBatch", method = RequestMethod.POST)
@@ -77,8 +80,8 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 根据ID更新单条记录
-    */
+     * 根据ID更新单条记录
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "更新")
     @RequestMapping(value = "/update", method = RequestMethod.POST)
@@ -90,8 +93,8 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 批量更新记录，默认单次执行1000条
-    */
+     * 批量更新记录，默认单次执行1000条
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "批量更新")
     @RequestMapping(value = "/updateBatch", method = RequestMethod.POST)
@@ -102,10 +105,9 @@ public class BqPrescriptionItemController {
         return true;
     }
 
-
     /**
-    * 根据ID删除单条记录，物理删除
-    */
+     * 根据ID删除单条记录，物理删除
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "删除")
     @RequestMapping(value = "/delete/{id}", method = RequestMethod.GET)
@@ -117,8 +119,8 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 批量删除记录,物理删除，默认单次执行1000条
-    */
+     * 批量删除记录,物理删除，默认单次执行1000条
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "批量删除")
     @RequestMapping(value = "/deleteBatch", method = RequestMethod.POST)
@@ -130,8 +132,8 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 根据ID删除单条记录，逻辑删除
-    */
+     * 根据ID删除单条记录，逻辑删除
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "删除")
     @RequestMapping(value = "/deleteLogic/{id}", method = RequestMethod.GET)
@@ -143,8 +145,8 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 批量删除记录，逻辑删除，默认单次执行1000条
-    */
+     * 批量删除记录，逻辑删除，默认单次执行1000条
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "批量删除")
     @RequestMapping(value = "/deleteLogicBatch", method = RequestMethod.POST)
@@ -156,8 +158,8 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 列表查询，orders可以排序，filters可以过滤
-    */
+     * 列表查询，orders可以排序，filters可以过滤
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "列表查询")
     @RequestMapping(value = "/list", method = RequestMethod.GET)
@@ -167,8 +169,8 @@ public class BqPrescriptionItemController {
     }
 
     /**
-    * 分页查询，orders可以排序，filters可以过滤
-    */
+     * 分页查询，orders可以排序，filters可以过滤
+     */
     @BQAuthMark(tag = TAG_NAME, buttons = {})
     @BQLogMark(module = MODULE_NAME, operation = "分页查询")
     @RequestMapping(value = "/page", method = RequestMethod.GET)

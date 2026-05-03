@@ -8,6 +8,7 @@ package com.qkplm.clinic.clinicserver.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.qkplm.clinic.clinicserver.dtos.BqRegistrationWithDiagnosisVo;
 import com.qkplm.clinic.clinicserver.entity.BqRegistrationEntity;
 import com.qkplm.clinic.clinicserver.mapper.BqRegistrationMapper;
 import com.qkplm.clinic.clinicserver.service.IBqRegistrationService;
@@ -151,7 +152,7 @@ public class BqRegistrationServiceImpl extends BaqiServiceImpl<BqRegistrationMap
     }
 
     @Override
-    public Page<BqRegistrationEntity> getVisitRecordList(
+    public Page<BqRegistrationWithDiagnosisVo> getVisitRecordList(
             String patientName,
             LocalDateTime startTime,
             LocalDateTime endTime,
@@ -166,20 +167,18 @@ public class BqRegistrationServiceImpl extends BaqiServiceImpl<BqRegistrationMap
 
         long offset = (long) (currentPage - 1) * pageSize;
 
-        // 关联患者表查询，获取患者表的冗余字段
-        List<BqRegistrationEntity> list = this.baseMapper.selectVisitRecordList(
+        List<BqRegistrationWithDiagnosisVo> list = this.baseMapper.selectVisitRecordList(
                 patientName, startTime, endTime, status, offset, pageSize);
         Long total = this.baseMapper.countVisitRecordList(
                 patientName, startTime, endTime, status);
 
-        // 构建分页对象
-        Page<BqRegistrationEntity> page = new Page<>(currentPage, pageSize, total);
+        Page<BqRegistrationWithDiagnosisVo> page = new Page<>(currentPage, pageSize, total);
         page.setRecords(list);
         return page;
     }
 
     @Override
-    public Page<BqRegistrationEntity> getChargeList(
+    public Page<BqRegistrationWithDiagnosisVo> getChargeList(
             String patientName,
             LocalDateTime startTime,
             LocalDateTime endTime,
@@ -188,31 +187,16 @@ public class BqRegistrationServiceImpl extends BaqiServiceImpl<BqRegistrationMap
             Integer currentPage,
             Integer pageSize) {
 
-        Page<BqRegistrationEntity> page = new Page<>(currentPage, pageSize);
+        long offset = (long) (currentPage - 1) * pageSize;
 
-        LambdaQueryWrapper<BqRegistrationEntity> wrapper = new LambdaQueryWrapper<>();
+        List<BqRegistrationWithDiagnosisVo> list = this.baseMapper.selectChargeList(
+                patientName, startTime, endTime, statusFee, status, offset, pageSize);
+        Long total = this.baseMapper.countChargeList(
+                patientName, startTime, endTime, statusFee, status);
 
-        if (StringUtils.hasText(patientName)) {
-            wrapper.like(BqRegistrationEntity::getPatient, patientName);
-        }
-        if (startTime != null) {
-            wrapper.ge(BqRegistrationEntity::getOrderTime, startTime);
-        }
-        if (endTime != null) {
-            wrapper.le(BqRegistrationEntity::getOrderTime, endTime);
-        }
-        if (StringUtils.hasText(statusFee)) {
-            wrapper.eq(BqRegistrationEntity::getStatusFee, statusFee);
-            wrapper.ne(BqRegistrationEntity::getStatus, "已退号");
-        }
-        if (StringUtils.hasText(status)) {
-            wrapper.eq(BqRegistrationEntity::getStatus, status);
-        }
-
-        wrapper.eq(BqRegistrationEntity::getDeleted, false)
-                .orderByDesc(BqRegistrationEntity::getCreatedTime);
-
-        return this.page(page, wrapper);
+        Page<BqRegistrationWithDiagnosisVo> page = new Page<>(currentPage, pageSize, total);
+        page.setRecords(list);
+        return page;
     }
 
 }

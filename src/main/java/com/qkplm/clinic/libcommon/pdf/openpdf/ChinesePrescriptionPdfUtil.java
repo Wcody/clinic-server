@@ -70,8 +70,8 @@ public class ChinesePrescriptionPdfUtil {
         private String prescNo;
         private String patientName;
         private String gender;
-        private String age;
         private Integer firstAge;
+        private Integer lastAge;
         private String ageType;
         private String idCard;
         private String clinicNo;
@@ -327,15 +327,13 @@ public class ChinesePrescriptionPdfUtil {
     }
 
     private static String getAgeText(PrescriptionDTO dto) {
-        if (dto.getAge() != null && !dto.getAge().isEmpty())
-            return dto.getAge();
-        if (dto.getFirstAge() == null)
-            return "";
-        return switch (dto.getAgeType() == null ? "1" : dto.getAgeType()) {
-            case "2" -> dto.getFirstAge() + "月";
-            case "3" -> dto.getFirstAge() + "天";
-            default -> dto.getFirstAge() + "岁";
-        };
+        if (dto.getFirstAge() == null) return "";
+        int first = dto.getFirstAge();
+        int last = dto.getLastAge() != null ? dto.getLastAge() : 0;
+        if ("2".equals(dto.getAgeType())) {
+            return last > 0 ? first + "月" + last + "天" : first + "月";
+        }
+        return last > 0 ? first + "岁" + last + "月" : first + "岁";
     }
 
     private static String nvl(String s) {
@@ -415,7 +413,7 @@ public class ChinesePrescriptionPdfUtil {
         dto.setPrescNo("TCM-20260425-003");
         dto.setPatientName("李某某");
         dto.setGender("女");
-        dto.setAge("36岁");
+        dto.setFirstAge(36);
         dto.setOrderTime(LocalDateTime.now());
         dto.setDoctor("曾医生");
         dto.setAllergicHistory("无");

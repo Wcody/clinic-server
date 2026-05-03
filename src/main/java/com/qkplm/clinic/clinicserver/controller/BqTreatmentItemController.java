@@ -166,6 +166,24 @@ public class BqTreatmentItemController {
         return treatmentItemService.list(params.toPage(), params.toWrapper());
     }
 
+    @BQAuthMark(tag = TAG_NAME, buttons = {})
+    @BQLogMark(module = MODULE_NAME, operation = "关键字搜索")
+    @RequestMapping(value = "/search", method = RequestMethod.GET)
+    public Iterable<BqTreatmentItemEntity> search(@RequestParam(required = false) String keyword) {
+        var query = treatmentItemService.lambdaQuery()
+                .orderByAsc(BqTreatmentItemEntity::getSeq);
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String kw = keyword.trim();
+            query.and(wrapper -> wrapper
+                    .like(BqTreatmentItemEntity::getName, kw)
+                    .or()
+                    .like(BqTreatmentItemEntity::getPinyin, kw));
+        }
+
+        return query.list();
+    }
+
     /**
     * 分页查询，orders可以排序，filters可以过滤
     */

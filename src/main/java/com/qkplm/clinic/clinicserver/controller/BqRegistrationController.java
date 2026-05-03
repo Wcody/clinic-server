@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.web.bind.annotation.*;
 
 import com.qkplm.clinic.clinicserver.service.IBqRegistrationService;
+import com.qkplm.clinic.clinicserver.dtos.BqRegistrationWithDiagnosisVo;
 import com.qkplm.clinic.clinicserver.entity.BqRegistrationEntity;
 import com.qkplm.clinic.clinicserver.dtos.RegistrationSaveDto;
 import com.qkplm.clinic.clinicserver.mapper.SysRegionMapper;
@@ -303,7 +304,7 @@ public class BqRegistrationController {
             @RequestParam(required = false, defaultValue = "1") Integer currentPage,
             @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
 
-        Page<BqRegistrationEntity> page = registrationService.getChargeList(
+        Page<BqRegistrationWithDiagnosisVo> page = registrationService.getChargeList(
                 patientName, startTime, endTime, statusFee, status, currentPage, pageSize);
 
         Map<String, Object> result = new HashMap<>();
@@ -364,7 +365,7 @@ public class BqRegistrationController {
         }
 
         // 调用Service层查询方法
-        Page<BqRegistrationEntity> page = registrationService.getVisitRecordList(
+        Page<BqRegistrationWithDiagnosisVo> page = registrationService.getVisitRecordList(
                 patientName, startTime, endTime, status, currentPage, pageSize);
 
         // 构建返回结果

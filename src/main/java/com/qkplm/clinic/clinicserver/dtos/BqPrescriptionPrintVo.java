@@ -36,10 +36,9 @@ public class BqPrescriptionPrintVo {
     private String patientName;
     private String gender;
     private Integer firstAge;
-    /** 年龄类型：1年 2月 3天 */
+    private Integer lastAge;
+    /** 年龄类型：1=岁+月  2=月+天 */
     private Integer ageType;
-    /** 年龄字符串 */
-    private String age;
     private LocalDateTime orderTime;
     private String doctor;
     private Integer registrationNo;

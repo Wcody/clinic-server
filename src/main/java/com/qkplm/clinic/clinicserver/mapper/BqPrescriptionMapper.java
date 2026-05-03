@@ -47,14 +47,14 @@ public interface BqPrescriptionMapper extends IBaqiMapper<BqPrescriptionEntity> 
                 r.patient       AS patientName,
                 r.gender,
                 r.firstAge,
+                r.lastAge,
                 r.ageType,
-                r.age,
                 r.orderTime,
                 r.doctor,
                 r.registrationNo,
                 pt.idCard,
                 pt.mobile       AS phone,
-                pt.address,
+                CONCAT(IFNULL(sp.name,''), IFNULL(sc.name,''), IFNULL(sd.name,''), IFNULL(pt.address,'')) AS address,
                 pt.allergicHistory,
                 pt.archiveNo,
                 mr.diagnosis,
@@ -62,11 +62,14 @@ public interface BqPrescriptionMapper extends IBaqiMapper<BqPrescriptionEntity> 
                 md_u.name       AS usageTypeName,
                 md_f.name       AS frequenceName
             FROM bq_prescription p
-            LEFT JOIN bq_registration      r    ON r.id    = p.regId
-            LEFT JOIN bq_patient           pt   ON pt.id   = p.patientId
-            LEFT JOIN bq_medical_record    mr   ON mr.id   = p.recordId
-            LEFT JOIN bq_medical_dictionary md_u ON md_u.id = p.usageType
-            LEFT JOIN bq_medical_dictionary md_f ON md_f.id = p.frequence
+            LEFT JOIN bq_registration       r    ON r.id       = p.regId
+            LEFT JOIN bq_patient            pt   ON pt.id      = p.patientId
+            LEFT JOIN bq_medical_record     mr   ON mr.id      = p.recordId
+            LEFT JOIN bq_medical_dictionary md_u ON md_u.id    = p.usageType
+            LEFT JOIN bq_medical_dictionary md_f ON md_f.id    = p.frequence
+            LEFT JOIN sys_province          sp   ON sp.id      = pt.province
+            LEFT JOIN sys_city              sc   ON sc.id      = pt.city
+            LEFT JOIN sys_district          sd   ON sd.id      = pt.district
             WHERE p.regId = #{regId}
               AND p.deleted = 0
             ORDER BY p.id ASC

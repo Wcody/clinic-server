@@ -1,14 +1,13 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月26日
+* 首创日期： 2026年4月29日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.qkplm.clinic.libcommon.entity.BQIdBaseEntity;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,7 +17,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>附加费设置表 实体类</p>
-* @datetime 2026-4-26 7:17
+* @datetime 2026-4-29 17:45
 */
 @Getter
 @Setter
@@ -61,11 +60,6 @@ public class BqAdditionalFeeEntity extends BQIdBaseEntity {
     private Boolean defaultAdd;
 
     /**
-     * 创建日期
-     */
-    private LocalDate created;
-
-    /**
      * 记录创建时间
      */
     private LocalDateTime createTime;
@@ -94,4 +88,9 @@ public class BqAdditionalFeeEntity extends BQIdBaseEntity {
      * 删除时间
      */
     private LocalDateTime deletedTime;
+
+    /**
+     * 名称拼音首字母
+     */
+    private String pinyin;
 }

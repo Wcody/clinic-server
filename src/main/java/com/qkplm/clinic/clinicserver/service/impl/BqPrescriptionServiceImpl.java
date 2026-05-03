@@ -215,12 +215,14 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
                     prescId = presc.getId();
                 }
 
-                // 写入明细
+                // 写入明细，按请求数组顺序写入 sort
                 final Integer finalPrescId = prescId;
-                items.forEach(item -> {
+                for (int i = 0; i < items.size(); i++) {
+                    BqPrescriptionItemEntity item = items.get(i);
                     item.setId(null);
                     item.setPrescId(finalPrescId);
-                });
+                    item.setSort(i);
+                }
                 if (!itemService.saveBatch(items)) {
                     throw new BQApiException("保存处方明细失败");
                 }
@@ -245,6 +247,7 @@ public class BqPrescriptionServiceImpl extends BaqiServiceImpl<BqPrescriptionMap
             List<BqPrescriptionItemEntity> items = itemService.list(
                     new LambdaQueryWrapper<BqPrescriptionItemEntity>()
                             .eq(BqPrescriptionItemEntity::getPrescId, presc.getId())
+                            .orderByAsc(BqPrescriptionItemEntity::getSort)
                             .orderByAsc(BqPrescriptionItemEntity::getId));
             BqPrescriptionFullDto dto = new BqPrescriptionFullDto();
             dto.setPrescription(presc);

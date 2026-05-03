@@ -7,6 +7,7 @@
 package com.qkplm.clinic.clinicserver.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.qkplm.clinic.clinicserver.dtos.BqRegistrationWithDiagnosisVo;
 import com.qkplm.clinic.clinicserver.entity.BqRegistrationEntity;
 import com.qkplm.clinic.libcommon.mybatis.base.IBaqiService;
 
@@ -62,7 +63,7 @@ public interface IBqRegistrationService extends IBaqiService<BqRegistrationEntit
      * @param pageSize    每页大小
      * @return 分页结果
      */
-    Page<BqRegistrationEntity> getVisitRecordList(
+    Page<BqRegistrationWithDiagnosisVo> getVisitRecordList(
             String patientName,
             LocalDateTime startTime,
             LocalDateTime endTime,
@@ -84,7 +85,7 @@ public interface IBqRegistrationService extends IBaqiService<BqRegistrationEntit
      * @param pageSize    每页大小
      * @return 分页结果
      */
-    Page<BqRegistrationEntity> getChargeList(
+    Page<BqRegistrationWithDiagnosisVo> getChargeList(
             String patientName,
             LocalDateTime startTime,
             LocalDateTime endTime,

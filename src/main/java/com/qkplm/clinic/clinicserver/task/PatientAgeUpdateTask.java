@@ -18,7 +18,6 @@ import com.qkplm.clinic.libcommon.utils.BQDateUtils;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -27,7 +26,7 @@ import java.util.List;
  * @author Wcke
  * @description
  *              <p>
- *              患者年龄定时更新任务
+ *              患者年龄定时更新任务：每日凌晨1点根据 birthDate 重新计算 firstAge/lastAge/ageType/age
  *              </p>
  * @datetime 2026-4-23
  */
@@ -48,13 +47,13 @@ public class PatientAgeUpdateTask {
     }
 
     /**
-     * 每天凌晨1点执行，更新所有患者的age字段
+     * 每天凌晨1点执行，根据 birthDate 重新计算所有患者的年龄字段
      */
     @Scheduled(cron = "0 0 1 * * ?")
     public void updatePatientAge() {
         log.info("开始执行患者年龄更新任务");
         try {
-            String sql = "SELECT id, ageType, firstAge, lastAge, createdTime FROM bq_patient WHERE deleted = 0";
+            String sql = "SELECT id, birthDate FROM bq_patient WHERE deleted = 0 AND birthDate IS NOT NULL";
             List<PatientAgeData> patients = jdbcTemplate.query(sql, new PatientAgeRowMapper());
 
             int total = patients.size();
@@ -63,12 +62,8 @@ public class PatientAgeUpdateTask {
 
             for (PatientAgeData patient : patients) {
                 try {
-                    // 计算需要更新的值
                     calculateAgeFields(patient);
-
-                    // 生成并执行更新SQL
-                    String updateSql = buildUpdateSql(patient);
-                    jdbcTemplate.update(updateSql);
+                    jdbcTemplate.update(buildUpdateSql(patient));
                     success++;
                 } catch (Exception e) {
                     log.error("更新患者年龄失败，id={}", patient.getId(), e);
@@ -83,169 +78,75 @@ public class PatientAgeUpdateTask {
     }
 
     /**
-     * 计算年龄相关字段
+     * 根据 birthDate 计算 firstAge/lastAge/ageType/age。
+     * 满1岁用"年/月"模式（ageType=1），不足1岁用"月/天"模式（ageType=2）。
      */
     private void calculateAgeFields(PatientAgeData patient) {
-        LocalDateTime createdTime = patient.getCreatedTime();
-        if (createdTime == null) {
+        LocalDate birthDate = patient.getBirthDate();
+        if (birthDate == null) {
             return;
         }
 
         LocalDate today = LocalDate.now();
-        LocalDate createdDate = createdTime.toLocalDate();
-        Integer ageType = patient.getAgeType();
+        Period period = Period.between(birthDate, today);
+        int years = period.getYears();
 
-        if (ageType == null) {
-            return;
+        if (years >= 1) {
+            patient.setAgeType(1);
+            patient.setFirstAge(years);
+            patient.setLastAge(period.getMonths());
+        } else {
+            long totalMonths = ChronoUnit.MONTHS.between(birthDate, today);
+            long remainDays = ChronoUnit.DAYS.between(birthDate.plusMonths(totalMonths), today);
+            patient.setAgeType(2);
+            patient.setFirstAge((int) totalMonths);
+            patient.setLastAge((int) remainDays);
         }
 
-        if (ageType == 1) {
-            // 年龄类型为"年"
-            Period period = Period.between(createdDate, today);
-            int years = period.getYears();
-            int months = period.getMonths();
-
-            patient.setFirstAgePlus(years);
-            patient.setLastAgePlus(months);
-
-            // 计算当前年龄
-            int currentFirstAge = (patient.getFirstAge() != null ? patient.getFirstAge() : 0) + years;
-            int currentLastAge = (patient.getLastAge() != null ? patient.getLastAge() : 0) + months;
-
-            // 月数超过12转为年
-            if (currentLastAge >= 12) {
-                currentFirstAge += currentLastAge / 12;
-                currentLastAge = currentLastAge % 12;
-            }
-
-            patient.setAge(BQDateUtils.formatAge(currentFirstAge, currentLastAge, ageType));
-
-        } else if (ageType == 2) {
-            // 年龄类型为"月"
-            long totalDays = ChronoUnit.DAYS.between(createdDate, today);
-            int months = (int) (totalDays / 30);
-            int days = (int) (totalDays % 30);
-
-            patient.setFirstAgePlus(months);
-            patient.setLastAgePlus(days);
-
-            // 计算当前年龄
-            int currentFirstAge = (patient.getFirstAge() != null ? patient.getFirstAge() : 0) + months;
-            int currentLastAge = (patient.getLastAge() != null ? patient.getLastAge() : 0) + days;
-
-            // 天数超过30转为月
-            if (currentLastAge >= 30) {
-                currentFirstAge += currentLastAge / 30;
-                currentLastAge = currentLastAge % 30;
-            }
-
-            patient.setAge(BQDateUtils.formatAge(currentFirstAge, currentLastAge, ageType));
-        }
+        patient.setAge(BQDateUtils.formatAge(patient.getFirstAge(), patient.getLastAge(), patient.getAgeType()));
     }
 
-    /**
-     * 生成更新SQL
-     */
     private String buildUpdateSql(PatientAgeData patient) {
         return String.format(
-                "UPDATE bq_patient SET firstAgePlus = %d, lastAgePlus = %d, age = '%s' WHERE id = %d",
-                patient.getFirstAgePlus(),
-                patient.getLastAgePlus(),
+                "UPDATE bq_patient SET firstAge = %d, lastAge = %d, ageType = %d, age = '%s' WHERE id = %d",
+                patient.getFirstAge(),
+                patient.getLastAge(),
+                patient.getAgeType(),
                 patient.getAge(),
                 patient.getId());
     }
 
-    /**
-     * 患者年龄数据内部类
-     */
     private static class PatientAgeData {
         private Long id;
+        private LocalDate birthDate;
         private Integer ageType;
         private Integer firstAge;
         private Integer lastAge;
-        private LocalDateTime createdTime;
-        private Integer firstAgePlus;
-        private Integer lastAgePlus;
         private String age;
 
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public Integer getAgeType() {
-            return ageType;
-        }
-
-        public void setAgeType(Integer ageType) {
-            this.ageType = ageType;
-        }
-
-        public Integer getFirstAge() {
-            return firstAge;
-        }
-
-        public void setFirstAge(Integer firstAge) {
-            this.firstAge = firstAge;
-        }
-
-        public Integer getLastAge() {
-            return lastAge;
-        }
-
-        public void setLastAge(Integer lastAge) {
-            this.lastAge = lastAge;
-        }
-
-        public LocalDateTime getCreatedTime() {
-            return createdTime;
-        }
-
-        public void setCreatedTime(LocalDateTime createdTime) {
-            this.createdTime = createdTime;
-        }
-
-        public Integer getFirstAgePlus() {
-            return firstAgePlus;
-        }
-
-        public void setFirstAgePlus(Integer firstAgePlus) {
-            this.firstAgePlus = firstAgePlus;
-        }
-
-        public Integer getLastAgePlus() {
-            return lastAgePlus;
-        }
-
-        public void setLastAgePlus(Integer lastAgePlus) {
-            this.lastAgePlus = lastAgePlus;
-        }
-
-        public String getAge() {
-            return age;
-        }
-
-        public void setAge(String age) {
-            this.age = age;
-        }
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public LocalDate getBirthDate() { return birthDate; }
+        public void setBirthDate(LocalDate birthDate) { this.birthDate = birthDate; }
+        public Integer getAgeType() { return ageType; }
+        public void setAgeType(Integer ageType) { this.ageType = ageType; }
+        public Integer getFirstAge() { return firstAge; }
+        public void setFirstAge(Integer firstAge) { this.firstAge = firstAge; }
+        public Integer getLastAge() { return lastAge; }
+        public void setLastAge(Integer lastAge) { this.lastAge = lastAge; }
+        public String getAge() { return age; }
+        public void setAge(String age) { this.age = age; }
     }
 
-    /**
-     * RowMapper
-     */
     private static class PatientAgeRowMapper implements RowMapper<PatientAgeData> {
         @Override
         public PatientAgeData mapRow(ResultSet rs, int rowNum) throws SQLException {
             PatientAgeData data = new PatientAgeData();
             data.setId(rs.getLong("id"));
-            data.setAgeType(rs.getObject("ageType") != null ? rs.getInt("ageType") : null);
-            data.setFirstAge(rs.getObject("firstAge") != null ? rs.getInt("firstAge") : null);
-            data.setLastAge(rs.getObject("lastAge") != null ? rs.getInt("lastAge") : null);
-            data.setCreatedTime(
-                    rs.getTimestamp("createdTime") != null ? rs.getTimestamp("createdTime").toLocalDateTime() : null);
+            java.sql.Date sqlDate = rs.getDate("birthDate");
+            if (sqlDate != null) {
+                data.setBirthDate(sqlDate.toLocalDate());
+            }
             return data;
         }
     }

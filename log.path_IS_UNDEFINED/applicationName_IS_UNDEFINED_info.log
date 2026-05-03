@@ -1,6 +1,0 @@
-2026-04-20 08:39:30.074 [File Watcher] INFO  o.s.b.d.a.LocalDevToolsAutoConfiguration$RestartingClassPathChangeChangedEventListener - Restarting due to 1193 class path changes (0 additions, 1193 deletions, 0 modifications)
-2026-04-20 08:39:30.082 [Thread-4] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
-2026-04-20 08:39:30.083 [tomcat-shutdown] INFO  org.apache.coyote.http11.Http11NioProtocol - Pausing ProtocolHandler ["http-nio-8700"]
-2026-04-20 08:39:30.102 [tomcat-shutdown] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
-2026-04-20 08:39:30.103 [Thread-4] INFO  org.apache.coyote.http11.Http11NioProtocol - Stopping ProtocolHandler ["http-nio-8700"]
-2026-04-20 08:39:30.428 [restartedMain] INFO  com.qkplm.clinic.libcommon.utils.BQAuthUtils - 设备编码: A5BA14BCD7AD9EA364BE368D1AB916A1BDD9025104E20F6606F4471DD99426ED

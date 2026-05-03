@@ -17,6 +17,7 @@ import com.qkplm.clinic.libcommon.utils.BqPinyinUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.util.Collections;
 
 /**
@@ -54,12 +55,11 @@ public class BqPatientServiceImpl extends BaqiServiceImpl<BqPatientMapper, BqPat
 
     @Override
     public boolean save(BqPatientEntity entity) {
-        // 设置档案号
         entity.setArchiveNo(BQDateUtils.getCurrentDateMillsNoSepShortYear());
         if (StringUtils.hasText(entity.getName())) {
             entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getName()));
         }
-
+        computeAndSetBirthDateAndAge(entity);
         return super.save(entity);
     }
 
@@ -68,7 +68,34 @@ public class BqPatientServiceImpl extends BaqiServiceImpl<BqPatientMapper, BqPat
         if (StringUtils.hasText(entity.getName())) {
             entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getName()));
         }
-
+        computeAndSetBirthDateAndAge(entity);
         return super.updateById(entity);
+    }
+
+    /**
+     * 根据 firstAge/ageType/lastAge 推算 birthDate 和 age 字符串。
+     * ageType=1：firstAge 为岁数，lastAge 为月数；
+     * ageType=2：firstAge 为月数，lastAge 为天数。
+     */
+    private void computeAndSetBirthDateAndAge(BqPatientEntity entity) {
+        Integer ageType = entity.getAgeType();
+        Integer firstAge = entity.getFirstAge();
+        if (ageType == null || firstAge == null) {
+            return;
+        }
+        int lastAge = entity.getLastAge() != null ? entity.getLastAge() : 0;
+
+        LocalDate today = LocalDate.now();
+        LocalDate birthDate;
+        if (ageType == 1) {
+            birthDate = today.minusYears(firstAge).minusMonths(lastAge);
+        } else if (ageType == 2) {
+            birthDate = today.minusMonths(firstAge).minusDays(lastAge);
+        } else {
+            return;
+        }
+
+        entity.setBirthDate(birthDate);
+        entity.setAge(BQDateUtils.formatAge(firstAge, lastAge, ageType));
     }
 }

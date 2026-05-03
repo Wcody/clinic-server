@@ -1,7 +1,7 @@
 /*
 * 版权声明 Copyright (c) 2026。
 * 版权所有者： [九维无纸化病案管理系统]
-* 首创日期： 2026年4月26日
+* 首创日期： 2026年4月29日
 */
 package com.qkplm.clinic.clinicserver.entity;
 
@@ -19,7 +19,7 @@ import java.io.Serial;
 /**
 * @author Wcke
 * @description <p>系统参数项表 实体类</p>
-* @datetime 2026-4-26 7:17
+* @datetime 2026-4-29 17:45
 */
 @Getter
 @Setter
