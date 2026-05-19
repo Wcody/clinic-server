@@ -10,7 +10,9 @@ import com.qkplm.clinic.clinicserver.entity.BqExamineItemEntity;
 import com.qkplm.clinic.clinicserver.mapper.BqExamineItemMapper;
 import com.qkplm.clinic.clinicserver.service.IBqExamineItemService;
 import com.qkplm.clinic.libcommon.mybatis.base.BaqiServiceImpl;
+import com.qkplm.clinic.libcommon.utils.BqPinyinUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 /**
 * @author Wcke
@@ -20,4 +22,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class BqExamineItemServiceImpl extends BaqiServiceImpl<BqExamineItemMapper, BqExamineItemEntity> implements IBqExamineItemService {
 
+    @Override
+    public boolean save(BqExamineItemEntity entity) {
+        if (StringUtils.hasText(entity.getName()))
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getName()));
+        return super.save(entity);
+    }
+
+    @Override
+    public boolean updateById(BqExamineItemEntity entity) {
+        if (StringUtils.hasText(entity.getName()))
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getName()));
+        return super.updateById(entity);
+    }
 }

@@ -40,27 +40,25 @@ public class BqPrescriptionPrintService {
     // ==================== 公开入口 ====================
 
     /**
-     * @param regId        挂号ID
-     * @param showPrice    是否显示金额
-     * @param printCurrent true=仅打印当前处方类型，false=打印全部
-     * @param prescType    处方类型（printCurrent=true 时有效）：1西药 2中药 3检查 4处置
+     * @param regId     挂号ID
+     * @param showPrice 是否显示金额
+     * @param prescId   处方ID，有值时只打印该张处方，null 则打印全部
      */
-    public byte[] generatePdf(Integer regId, Boolean showPrice,
-                               Boolean printCurrent, Integer prescType) throws Exception {
+    public byte[] generatePdf(Integer regId, Boolean showPrice, Integer prescId) throws Exception {
         // 1. 联表查询处方头信息
         List<BqPrescriptionPrintVo> headers = prescriptionMapper.queryForPrint(regId);
         if (headers.isEmpty()) {
             throw new RuntimeException("该挂号暂无处方信息");
         }
 
-        // 2. 打印当前处方：按类型过滤
-        if (Boolean.TRUE.equals(printCurrent) && prescType != null) {
-            final int pt = prescType;
+        // 2. 按指定处方ID过滤
+        if (prescId != null) {
+            final int id = prescId;
             headers = headers.stream()
-                    .filter(h -> pt == h.getPrescType())
+                    .filter(h -> id == h.getId())
                     .collect(Collectors.toList());
             if (headers.isEmpty()) {
-                throw new RuntimeException("该类型暂无处方信息");
+                throw new RuntimeException("指定处方不存在");
             }
         }
 

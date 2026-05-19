@@ -57,7 +57,7 @@ public class BqPatientServiceImpl extends BaqiServiceImpl<BqPatientMapper, BqPat
     public boolean save(BqPatientEntity entity) {
         entity.setArchiveNo(BQDateUtils.getCurrentDateMillsNoSepShortYear());
         if (StringUtils.hasText(entity.getName())) {
-            entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getName()));
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getName()));
         }
         computeAndSetBirthDateAndAge(entity);
         return super.save(entity);
@@ -66,7 +66,7 @@ public class BqPatientServiceImpl extends BaqiServiceImpl<BqPatientMapper, BqPat
     @Override
     public boolean updateById(BqPatientEntity entity) {
         if (StringUtils.hasText(entity.getName())) {
-            entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getName()));
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getName()));
         }
         computeAndSetBirthDateAndAge(entity);
         return super.updateById(entity);

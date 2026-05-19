@@ -30,7 +30,7 @@ public class BqDiagnosisDictServiceImpl extends BaqiServiceImpl<BqDiagnosisDictM
     @Override
     public boolean save(BqDiagnosisDictEntity entity) {
         if (StringUtils.hasText(entity.getDiagnosisName())) {
-            entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getDiagnosisName()));
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getDiagnosisName()));
         }
         return super.save(entity);
     }
@@ -38,7 +38,7 @@ public class BqDiagnosisDictServiceImpl extends BaqiServiceImpl<BqDiagnosisDictM
     @Override
     public boolean updateById(BqDiagnosisDictEntity entity) {
         if (StringUtils.hasText(entity.getDiagnosisName())) {
-            entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getDiagnosisName()));
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getDiagnosisName()));
         }
         return super.updateById(entity);
     }

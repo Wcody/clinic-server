@@ -58,13 +58,13 @@ public interface BqPrescriptionMapper extends IBaqiMapper<BqPrescriptionEntity> 
                 pt.allergicHistory,
                 pt.archiveNo,
                 mr.diagnosis,
-                mr.treatAdvice  AS treatmentSuggest,
+                mr.advice       AS treatmentSuggest,
                 md_u.name       AS usageTypeName,
                 md_f.name       AS frequenceName
             FROM bq_prescription p
             LEFT JOIN bq_registration       r    ON r.id       = p.regId
             LEFT JOIN bq_patient            pt   ON pt.id      = p.patientId
-            LEFT JOIN bq_medical_record     mr   ON mr.id      = p.recordId
+            LEFT JOIN bq_medical_record     mr   ON mr.regId   = p.regId AND mr.deleted = 0
             LEFT JOIN bq_medical_dictionary md_u ON md_u.id    = p.usageType
             LEFT JOIN bq_medical_dictionary md_f ON md_f.id    = p.frequence
             LEFT JOIN sys_province          sp   ON sp.id      = pt.province

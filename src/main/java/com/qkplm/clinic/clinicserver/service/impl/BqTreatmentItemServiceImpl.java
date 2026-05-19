@@ -10,7 +10,9 @@ import com.qkplm.clinic.clinicserver.entity.BqTreatmentItemEntity;
 import com.qkplm.clinic.clinicserver.mapper.BqTreatmentItemMapper;
 import com.qkplm.clinic.clinicserver.service.IBqTreatmentItemService;
 import com.qkplm.clinic.libcommon.mybatis.base.BaqiServiceImpl;
+import com.qkplm.clinic.libcommon.utils.BqPinyinUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 /**
 * @author Wcke
@@ -20,4 +22,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class BqTreatmentItemServiceImpl extends BaqiServiceImpl<BqTreatmentItemMapper, BqTreatmentItemEntity> implements IBqTreatmentItemService {
 
+    @Override
+    public boolean save(BqTreatmentItemEntity entity) {
+        if (StringUtils.hasText(entity.getName()))
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getName()));
+        return super.save(entity);
+    }
+
+    @Override
+    public boolean updateById(BqTreatmentItemEntity entity) {
+        if (StringUtils.hasText(entity.getName()))
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getName()));
+        return super.updateById(entity);
+    }
 }

@@ -80,12 +80,7 @@ public class BqMedicalRecordEntity extends BQIdBaseEntity {
     private String diagnosisIds;
 
     /**
-     * 治疗建议
-     */
-    private String treatAdvice;
-
-    /**
-     * 医嘱
+     * 治疗建议/医嘱
      */
     private String advice;
 

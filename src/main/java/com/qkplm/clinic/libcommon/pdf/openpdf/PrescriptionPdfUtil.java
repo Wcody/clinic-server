@@ -271,7 +271,7 @@ public class PrescriptionPdfUtil {
         PdfPCell c = new PdfPCell(new Phrase(getUsageText(item), regularFont(10)));
         c.setColspan(4);
         c.setBorder(Rectangle.NO_BORDER);
-        c.setFixedHeight(ROW_HEIGHT);
+        c.setMinimumHeight(ROW_HEIGHT);
         c.setPaddingRight(6);
         c.setPaddingTop(2);
         c.setPaddingBottom(2);

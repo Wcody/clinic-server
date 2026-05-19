@@ -29,14 +29,14 @@ public class BqDrugServiceImpl extends BaqiServiceImpl<BqDrugMapper, BqDrugEntit
     @Override
     public boolean save(BqDrugEntity entity) {
         if (StringUtils.hasText(entity.getName()))
-            entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getName()));
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getName()));
         return super.save(entity);
     }
 
     @Override
     public boolean updateById(BqDrugEntity entity) {
         if (StringUtils.hasText(entity.getName()))
-            entity.setPinyin(BqPinyinUtils.getAllFirstLetters(entity.getName()));
+            entity.setPinyin(BqPinyinUtils.getAllFirstLettersPolyphonic(entity.getName()));
         return super.updateById(entity);
     }
 }
