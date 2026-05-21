@@ -5,6 +5,7 @@
 */
 package com.qkplm.clinic.clinicserver.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.qkplm.clinic.libcommon.entity.BQIdBaseEntity;
 import java.time.LocalDateTime;
@@ -76,5 +77,10 @@ public class BqEnumItemEntity extends BQIdBaseEntity {
     /**
      * 逻辑删除
      */
+    @TableField("`delete`")
     private Integer delete;
+    /**
+     * [B]租户初始化数据
+     */
+    private Boolean tenantInitData;
 }

@@ -45,6 +45,11 @@ public class TbUserServiceImpl extends BaqiServiceImpl<TbUserMapper, TbUserEntit
     }
 
     @Override
+    public Optional<TbUserEntity> getByAccountAndTenantId(String account, String tenantId) {
+        return Optional.ofNullable(getBaseMapper().selectByAccountAndTenantId(account, tenantId));
+    }
+
+    @Override
     public Object resetPassword(List<String> infos) {
         if (Objects.nonNull(infos) && infos.size() > 1) {
             String userId = infos.get(0);

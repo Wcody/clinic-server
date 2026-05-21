@@ -112,10 +112,7 @@ public class TbGroupController {
     @BQLogMark(module = MODULE_NAME, operation = "删除")
     @RequestMapping(value = "/delete/{id}", method = RequestMethod.GET)
     public Boolean delete(@PathVariable String id) {
-        if (!groupService.removePhysicalById(id)) {
-            throw new BQApiException("删除失败，对象可能不存在");
-        }
-        return true;
+        return groupService.deleteGroup(id);
     }
 
     /**
@@ -125,10 +122,7 @@ public class TbGroupController {
     @BQLogMark(module = MODULE_NAME, operation = "批量删除")
     @RequestMapping(value = "/deleteBatch", method = RequestMethod.POST)
     public Boolean deleteBatch(@RequestBody Collection<Serializable> ids) {
-        if (!groupService.removePhysicalBatchByIds(ids)) {
-            throw new BQApiException("批量删除失败");
-        }
-        return true;
+        return groupService.deleteGroupBatch(ids);
     }
 
     /**

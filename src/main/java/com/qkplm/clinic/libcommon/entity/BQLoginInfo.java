@@ -63,6 +63,8 @@ public class BQLoginInfo implements Serializable {
     private String remark;
     /** 当前登录用户的角色 */
     private List<String> roles;
+    /** 当前租户ID */
+    private String tenantId;
     /** 诊所logo */
     private String tenantLogo;
     /** 诊所名称 */

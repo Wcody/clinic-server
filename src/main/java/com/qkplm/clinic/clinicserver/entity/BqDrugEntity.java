@@ -203,4 +203,8 @@ public class BqDrugEntity extends BQIdBaseEntity {
      * 煎药方式
      */
     private String decoWay;
+    /**
+     * [B]租户初始化数据
+     */
+    private Boolean tenantInitData;
 }

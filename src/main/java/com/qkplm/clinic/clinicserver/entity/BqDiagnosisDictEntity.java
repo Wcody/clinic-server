@@ -62,4 +62,8 @@ public class BqDiagnosisDictEntity extends BQIdBaseEntity {
      * 删除人名称
      */
     private String deletedBy;
+    /**
+     * [B]租户初始化数据
+     */
+    private Boolean tenantInitData;
 }

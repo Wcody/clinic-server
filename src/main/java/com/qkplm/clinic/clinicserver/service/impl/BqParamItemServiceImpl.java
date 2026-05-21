@@ -54,21 +54,14 @@ public class BqParamItemServiceImpl extends BaqiServiceImpl<BqParamItemMapper, B
 
     @Override
     public BqParamItemEntity saveParamItem(BqParamItemEntity paramItem) {
-        if (BQRequestContextHolderUtils.getUserDetails().isSuperAccount()) {
-            if (!updateById(paramItem)) {
+        if (paramItem.getPid() == BqDataConst.MINE_PID) BQRequestContextHolderUtils.setSourceTenantId();
+        try {
+            BqParamDataEntity paramData = getParamData(paramItem);
+            if (!paramDataService.saveOrUpdate(paramData)) {
                 throw new BQApiException("更新失败，对象可能已失效");
             }
-        } else {
-            if (paramItem.getPid() == BqDataConst.MINE_PID) BQRequestContextHolderUtils.setSourceTenantId();
-            try {
-                //个人参数，设置userId
-                BqParamDataEntity paramData = getParamData(paramItem);
-                if (!paramDataService.saveOrUpdate(paramData)) {
-                    throw new BQApiException("更新失败，对象可能已失效");
-                }
-            } finally {
-                if (paramItem.getPid() == BqDataConst.MINE_PID) BQRequestContextHolderUtils.removeSourceTenantId();
-            }
+        } finally {
+            if (paramItem.getPid() == BqDataConst.MINE_PID) BQRequestContextHolderUtils.removeSourceTenantId();
         }
         return paramItem;
     }
@@ -78,9 +71,6 @@ public class BqParamItemServiceImpl extends BaqiServiceImpl<BqParamItemMapper, B
         if (Objects.nonNull(id)) {
             BqParamItemEntity paramItem = getById(id);
             if (paramItem != null) {
-                if (BQRequestContextHolderUtils.getUserDetails().isSuperAccount()) {
-                    return paramItem.getParamValue();
-                }
                 return paramDataService.getRealParamData(paramItem.getPid(), paramItem.getId(), paramItem.getParamValue());
             }
         }
@@ -95,11 +85,16 @@ public class BqParamItemServiceImpl extends BaqiServiceImpl<BqParamItemMapper, B
     @Override
     public BQTenantInfoEntity getTenantInfo() {
         BQTenantInfoEntity infoEntity = new BQTenantInfoEntity();
+        infoEntity.setTenantId(BQRequestContextHolderUtils.getUserDetails().getTenantId());
+
         ObjectNode nameNode = getRealParamData(BqDataConst.TENANT_NAME_ID);
         infoEntity.setTenantName(nameNode.get("value").asText());
+
         ObjectNode logoNode = getRealParamData(BqDataConst.TENANT_LOGO_ID);
         ArrayNode logoArray = (ArrayNode) logoNode.get("fileList");
-        infoEntity.setTenantLogo(logoArray.get(0).asText());
+        if (Objects.nonNull(logoArray) && !logoArray.isEmpty()) {
+            infoEntity.setTenantLogo(logoArray.get(0).asText());
+        }
 
         return infoEntity;
     }

@@ -67,6 +67,7 @@ public class ChinesePrescriptionPdfUtil {
 
     @Data
     public static class PrescriptionDTO {
+        private String systemName;
         private String prescNo;
         private String patientName;
         private String gender;
@@ -210,7 +211,7 @@ public class ChinesePrescriptionPdfUtil {
     private static void addHeader(Document document, PrescriptionDTO dto) throws Exception {
         PdfPTable tTitle = new PdfPTable(1);
         tTitle.setWidthPercentage(100);
-        addCellCenter(tTitle, "茂名市高州市石鼓镇九罡村曾俊华卫生室", titleFont(15));
+        addCellCenter(tTitle, displaySystemName(dto.getSystemName()), titleFont(15));
         document.add(tTitle);
 
         PdfPTable tSub = new PdfPTable(1);
@@ -338,6 +339,11 @@ public class ChinesePrescriptionPdfUtil {
 
     private static String nvl(String s) {
         return s == null ? "" : s;
+    }
+
+    private static String displaySystemName(String systemName) {
+        String name = nvl(systemName).trim();
+        return name.isEmpty() ? "诊所" : name;
     }
 
     private static void addCellLeftBottom(PdfPTable t, String txt, Font f) {

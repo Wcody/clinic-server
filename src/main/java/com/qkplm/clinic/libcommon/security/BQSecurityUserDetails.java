@@ -123,6 +123,11 @@ public class BQSecurityUserDetails implements UserDetails {
     private String tenantName;
 
     /**
+     * 诊所Logo
+     */
+    private String tenantLogo;
+
+    /**
      * 账号是否过期
      */
     @Default
@@ -236,6 +241,7 @@ public class BQSecurityUserDetails implements UserDetails {
                 .put("eid", eid)
                 .put("sourceTenantId", sourceTenantId)
                 .put("tenantName", tenantName)
+                .put("tenantLogo", tenantLogo)
                 .putPOJO("loginTime", loginTime);
     }
 }

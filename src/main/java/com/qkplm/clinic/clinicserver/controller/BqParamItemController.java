@@ -197,14 +197,7 @@ public class BqParamItemController {
     public Page<BqParamItemEntity> page(BQSearchParamsGet<BqParamItemEntity> paramsGet) {
         BQSearchParams<BqParamItemEntity> params = paramsGet.toSearchParams();
         Page<BqParamItemEntity> page = paramItemService.page(params.toPage(), params.toWrapper());
-        if (!BQRequestContextHolderUtils.getUserDetails().isSuperAccount()) {
-            BQRequestContextHolderUtils.setSourceTenantId();
-            try {
-                page.getRecords().forEach(paramItemService::getRealParamItem);
-            } finally {
-                BQRequestContextHolderUtils.removeSourceTenantId();
-            }
-        }
+        page.getRecords().forEach(paramItemService::getRealParamItem);
         return page;
     }
 

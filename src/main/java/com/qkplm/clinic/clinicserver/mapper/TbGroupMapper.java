@@ -7,6 +7,7 @@
 package com.qkplm.clinic.clinicserver.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 import com.qkplm.clinic.clinicserver.entity.TbGroupEntity;
 import com.qkplm.clinic.libcommon.mybatis.base.IBaqiMapper;
 
@@ -17,5 +18,9 @@ import com.qkplm.clinic.libcommon.mybatis.base.IBaqiMapper;
 */
 @Mapper
 public interface TbGroupMapper extends IBaqiMapper<TbGroupEntity> {
+    @Select("select count(*) from tb_group where parentId = #{groupId} and deleted = 0")
+    int countChildrenByGroupId(String groupId);
 
+    @Select("select count(*) from tb_tenant where parentId = #{groupId} and deleted = 0")
+    int countTenantsByGroupId(String groupId);
 }

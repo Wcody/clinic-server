@@ -53,6 +53,22 @@ public class TbMenuServiceImpl extends BaqiServiceImpl<TbMenuMapper, TbMenuEntit
     }
 
     @Override
+    public List<String> getButtonAuthsByMenuIds(String parentId, List<String> menuIds) {
+        if (Objects.isNull(menuIds) || menuIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return getBaseMapper().getButtonAuthsByMenuIds(parentId, menuIds);
+    }
+
+    @Override
+    public List<String> getAllButtonAuthsByMenuIds(List<String> menuIds) {
+        if (Objects.isNull(menuIds) || menuIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return getBaseMapper().getAllButtonAuthsByMenuIds(menuIds);
+    }
+
+    @Override
     public Iterable<TbMenuEntity> listByParentId(String parentId) {
         return listByParentId(parentId, null);
     }
@@ -90,7 +106,9 @@ public class TbMenuServiceImpl extends BaqiServiceImpl<TbMenuMapper, TbMenuEntit
                 if (!StringUtils.isBlank(menu.getComponent())) {
                     node.put("component", menu.getComponent());
                 }
-                List<String> auths = getButtonAuthsBy(menu.getEid(), userDetails.getRoles());
+                List<String> auths = userDetails.isTenantAdmin()
+                        ? getButtonAuthsByMenuIds(menu.getEid(), userDetails.getMenus())
+                        : getButtonAuthsBy(menu.getEid(), userDetails.getRoles());
                 if (userDetails.isSuperAccount()) {
                     // 返回最大权限
                     auths = new ArrayList<>(auths);

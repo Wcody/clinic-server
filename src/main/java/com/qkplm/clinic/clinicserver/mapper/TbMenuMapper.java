@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import com.qkplm.clinic.clinicserver.entity.TbMenuEntity;
 import com.qkplm.clinic.libcommon.mybatis.base.IBaqiMapper;
 
@@ -51,6 +52,24 @@ public interface TbMenuMapper extends IBaqiMapper<TbMenuEntity> {
             "</foreach>" +
             "</script>")
     List<String> getAllButtonAuths(List<String> roleIds);
+
+    @Select("<script>" +
+            "select distinct auths from tb_menu " +
+            "where status = 1 and deleted = 0 and menuType = 3 and parentId = #{parentId} and eid in " +
+            "<foreach collection='menuIds' item='menuId' open='(' close=')' separator=','>" +
+            "#{menuId}" +
+            "</foreach>" +
+            "</script>")
+    List<String> getButtonAuthsByMenuIds(@Param("parentId") String parentId, @Param("menuIds") List<String> menuIds);
+
+    @Select("<script>" +
+            "select distinct auths from tb_menu " +
+            "where status = 1 and deleted = 0 and menuType = 3 and eid in " +
+            "<foreach collection='menuIds' item='menuId' open='(' close=')' separator=','>" +
+            "#{menuId}" +
+            "</foreach>" +
+            "</script>")
+    List<String> getAllButtonAuthsByMenuIds(@Param("menuIds") List<String> menuIds);
 
     @Delete("delete from sys_role_menu where roleId = #{roleId}")
     void deleteMenuIdsBy(String roleId);

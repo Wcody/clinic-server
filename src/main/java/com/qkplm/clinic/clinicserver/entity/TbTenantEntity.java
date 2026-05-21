@@ -5,6 +5,7 @@
 */
 package com.qkplm.clinic.clinicserver.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.qkplm.clinic.libcommon.entity.BQEidBaseEntity;
 import java.time.LocalDateTime;
@@ -69,6 +70,11 @@ public class TbTenantEntity extends BQEidBaseEntity {
     private Boolean status;
 
     /**
+     * 授权类型，0临时授权，1正式授权，2永久授权
+     */
+    private Integer authType;
+
+    /**
      * 最大可创建用户数量
      */
     private Integer maxUserCount;
@@ -87,6 +93,55 @@ public class TbTenantEntity extends BQEidBaseEntity {
      * 描述信息
      */
     private String remark;
+
+
+    /**
+     * 初始管理员账号
+     */
+    @TableField(exist = false)
+    private String adminAccount;
+
+    /**
+     * 初始管理员密码
+     */
+    @TableField(exist = false)
+    private String adminPassword;
+
+    /**
+     * 初始管理员姓名
+     */
+    @TableField(exist = false)
+    private String adminName;
+
+    /**
+     * 初始管理员手机号
+     */
+    @TableField(exist = false)
+    private String adminPhone;
+
+    /**
+     * 初始管理员邮箱
+     */
+    @TableField(exist = false)
+    private String adminEmail;
+
+    /**
+     * 当前用户数
+     */
+    @TableField(exist = false)
+    private Integer currentUserCount;
+
+    /**
+     * 管理员数
+     */
+    @TableField(exist = false)
+    private Integer adminCount;
+
+    /**
+     * 授权菜单数
+     */
+    @TableField(exist = false)
+    private Integer menuCount;
 
     /**
      * 最近登录时间

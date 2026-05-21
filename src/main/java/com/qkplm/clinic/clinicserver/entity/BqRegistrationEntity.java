@@ -130,6 +130,16 @@ public class BqRegistrationEntity extends BQIdBaseEntity {
     private String age;
 
     /**
+     * 挂号时患者身高，单位cm
+     */
+    private BigDecimal height;
+
+    /**
+     * 挂号时患者体重，单位kg
+     */
+    private BigDecimal weight;
+
+    /**
      * 收费状态:未缴费/已缴费/已退费等等
      */
     private String statusFee;

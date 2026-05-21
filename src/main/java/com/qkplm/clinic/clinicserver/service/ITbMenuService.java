@@ -30,6 +30,16 @@ public interface ITbMenuService extends IBaqiService<TbMenuEntity> {
      * 根据父级id查询按钮的权限
      */
     List<String> getAllButtonAuths(List<String> roleIds);
+
+    /**
+     * 根据菜单ID列表查询指定父级下按钮权限
+     */
+    List<String> getButtonAuthsByMenuIds(String parentId, List<String> menuIds);
+
+    /**
+     * 根据菜单ID列表查询所有按钮权限
+     */
+    List<String> getAllButtonAuthsByMenuIds(List<String> menuIds);
     /**
      * 根据父级id查询菜单
      */

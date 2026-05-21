@@ -37,6 +37,7 @@ public class BQRequestContextHolderUtils {
     static private final String STATIC_USERID = "1915e15d0a5c41eea25f0c546499faa2";
     static private final String STATIC_ACCOUNT = "admin";
     static private final String STATIC_TENANT_ID = "04bda4f00fc44642f41bfafbb5c6f280";
+    static public final String PLATFORM_TENANT_ID = STATIC_TENANT_ID;
     static private final BQPlatformEnum STATIC_PLATFORM = BQPlatformEnum.PCB;
     static private final String REAL_IP_NAME = "X-Real-IP";
     static private final String HOST_NAME = "Host";
@@ -98,6 +99,16 @@ public class BQRequestContextHolderUtils {
         if (!Objects.isNull(request)) {
             String sourceTenantId = getUserDetails().getSourceTenantId();
             request.setAttribute(SOURCE_TENANT_NAME, sourceTenantId);
+        }
+    }
+
+    /**
+     * 设置原始租户ID
+     */
+    static public void setSourceTenantId(String tenantId) {
+        HttpServletRequest request = getRequest();
+        if (!Objects.isNull(request)) {
+            request.setAttribute(SOURCE_TENANT_NAME, tenantId);
         }
     }
 

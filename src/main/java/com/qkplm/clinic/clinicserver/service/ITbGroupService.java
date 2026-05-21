@@ -10,6 +10,8 @@ import com.qkplm.clinic.clinicserver.entity.TbGroupEntity;
 import com.qkplm.clinic.clinicserver.entity.TbTenantEntity;
 import com.qkplm.clinic.libcommon.mybatis.base.IBaqiService;
 
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -19,5 +21,10 @@ import java.util.List;
 */
 public interface ITbGroupService extends IBaqiService<TbGroupEntity> {
     Object setStatus(String eid, Boolean status);
+
+    Boolean deleteGroup(String groupId);
+
+    Boolean deleteGroupBatch(Collection<Serializable> groupIds);
+
     List<TbTenantEntity> getGroupInfo(List<TbTenantEntity> tentantList);
 }

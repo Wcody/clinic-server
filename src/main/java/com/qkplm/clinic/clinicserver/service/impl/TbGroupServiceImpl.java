@@ -13,7 +13,10 @@ import com.qkplm.clinic.clinicserver.service.ITbGroupService;
 import org.springframework.stereotype.Service;
 import com.qkplm.clinic.libcommon.api.BQApiException;
 import com.qkplm.clinic.libcommon.mybatis.base.BaqiServiceImpl;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +44,28 @@ public class TbGroupServiceImpl extends BaqiServiceImpl<TbGroupMapper, TbGroupEn
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteGroup(String groupId) {
+        assertCanDeleteGroup(groupId);
+        if (!removePhysicalById(groupId)) {
+            throw new BQApiException("删除失败，对象可能不存在");
+        }
+        return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteGroupBatch(Collection<Serializable> groupIds) {
+        for (Serializable groupId : groupIds) {
+            assertCanDeleteGroup(String.valueOf(groupId));
+        }
+        if (!removePhysicalBatchByIds(groupIds)) {
+            throw new BQApiException("批量删除失败");
+        }
+        return true;
+    }
+
+    @Override
     public List<TbTenantEntity> getGroupInfo(List<TbTenantEntity> tentantList) {
         if (Objects.isNull(tentantList) || tentantList.isEmpty()) {
             return tentantList;
@@ -52,5 +77,16 @@ public class TbGroupServiceImpl extends BaqiServiceImpl<TbGroupMapper, TbGroupEn
             tenant.setParentName(hashMap.get(tenant.getParentId()));
         });
         return tentantList;
+    }
+
+    private void assertCanDeleteGroup(String groupId) {
+        int childrenCount = getBaseMapper().countChildrenByGroupId(groupId);
+        if (childrenCount > 0) {
+            throw new BQApiException("该管理组下存在子组，请先调整或删除子组");
+        }
+        int tenantCount = getBaseMapper().countTenantsByGroupId(groupId);
+        if (tenantCount > 0) {
+            throw new BQApiException("该诊所管理组下存在诊所，请先调整诊所归属");
+        }
     }
 }

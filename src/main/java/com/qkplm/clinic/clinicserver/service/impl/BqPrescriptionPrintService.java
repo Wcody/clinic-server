@@ -14,6 +14,7 @@ import com.qkplm.clinic.clinicserver.entity.BqMedicalDictionaryEntity;
 import com.qkplm.clinic.clinicserver.mapper.BqMedicalDictionaryMapper;
 import com.qkplm.clinic.clinicserver.mapper.BqPrescriptionItemMapper;
 import com.qkplm.clinic.clinicserver.mapper.BqPrescriptionMapper;
+import com.qkplm.clinic.clinicserver.service.IBqParamItemService;
 import com.qkplm.clinic.libcommon.pdf.openpdf.ChinesePrescriptionPdfUtil;
 import com.qkplm.clinic.libcommon.pdf.openpdf.PrescriptionPdfUtil;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class BqPrescriptionPrintService {
     private final BqPrescriptionMapper prescriptionMapper;
     private final BqPrescriptionItemMapper itemMapper;
     private final BqMedicalDictionaryMapper dictionaryMapper;
+    private final IBqParamItemService paramItemService;
 
     // ==================== 公开入口 ====================
 
@@ -77,11 +79,12 @@ public class BqPrescriptionPrintService {
 
         // 4. 逐张生成 PDF
         boolean show = Boolean.TRUE.equals(showPrice);
+        String systemName = nvl(paramItemService.getTenantInfo().getTenantName());
         List<byte[]> pdfList = new ArrayList<>();
         for (BqPrescriptionPrintVo header : headers) {
             List<BqPrescriptionItemEntity> items =
                     itemMap.getOrDefault(header.getId(), List.of());
-            pdfList.add(buildOnePdf(header, items, show));
+            pdfList.add(buildOnePdf(header, items, show, systemName));
         }
 
         // 5. 单张直接返回，多张合并后返回
@@ -92,22 +95,24 @@ public class BqPrescriptionPrintService {
 
     private byte[] buildOnePdf(BqPrescriptionPrintVo header,
                                 List<BqPrescriptionItemEntity> items,
-                                boolean showPrice) {
+                                boolean showPrice,
+                                String systemName) {
         // 处方类型 2 = 中药，其余全部走西药模板
         if (Integer.valueOf(2).equals(header.getPrescType())) {
             return ChinesePrescriptionPdfUtil.generatePrescriptionPdf(
-                    List.of(buildTcmDto(header, items)), showPrice);
+                    List.of(buildTcmDto(header, items, systemName)), showPrice);
         }
         return PrescriptionPdfUtil.generatePrescriptionPdf(
-                List.of(buildWesternDto(header, items)), showPrice);
+                List.of(buildWesternDto(header, items, systemName)), showPrice);
     }
 
     // ==================== 西药处方 DTO 构建 ====================
 
     private PrescriptionPdfUtil.PrescriptionDTO buildWesternDto(
-            BqPrescriptionPrintVo h, List<BqPrescriptionItemEntity> items) {
+            BqPrescriptionPrintVo h, List<BqPrescriptionItemEntity> items, String systemName) {
 
         PrescriptionPdfUtil.PrescriptionDTO dto = new PrescriptionPdfUtil.PrescriptionDTO();
+        dto.setSystemName(systemName);
         dto.setPrescNo(h.getPrescNo());
         dto.setPatientName(h.getPatientName());
         dto.setGender(h.getGender());
@@ -151,9 +156,10 @@ public class BqPrescriptionPrintService {
     // ==================== 中药处方 DTO 构建 ====================
 
     private ChinesePrescriptionPdfUtil.PrescriptionDTO buildTcmDto(
-            BqPrescriptionPrintVo h, List<BqPrescriptionItemEntity> items) {
+            BqPrescriptionPrintVo h, List<BqPrescriptionItemEntity> items, String systemName) {
 
         ChinesePrescriptionPdfUtil.PrescriptionDTO dto = new ChinesePrescriptionPdfUtil.PrescriptionDTO();
+        dto.setSystemName(systemName);
         dto.setPrescNo(h.getPrescNo());
         dto.setPatientName(h.getPatientName());
         dto.setGender(h.getGender());

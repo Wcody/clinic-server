@@ -6,9 +6,13 @@
 
 package com.qkplm.clinic.clinicserver.service;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qkplm.clinic.clinicserver.entity.TbTenantEntity;
 import com.qkplm.clinic.libcommon.mybatis.base.IBaqiService;
 
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -17,7 +21,17 @@ import java.util.List;
 * @datetime 2024-6-16 15:49
 */
 public interface ITbTenantService extends IBaqiService<TbTenantEntity> {
+    TbTenantEntity createTenant(TbTenantEntity tenant);
+
+    Page<TbTenantEntity> pageWithUsage(Page<TbTenantEntity> page, Wrapper<TbTenantEntity> queryWrapper);
+
+    Iterable<TbTenantEntity> listWithUsage(Page<TbTenantEntity> page, Wrapper<TbTenantEntity> queryWrapper);
+
     Object setStatus(String eid, Boolean status);
+
+    Boolean deleteTenant(String tenantId);
+
+    Boolean deleteTenantBatch(Collection<Serializable> tenantIds);
 
     Object saveUserIds(String tenantId, List<String> userIds);
 

@@ -23,6 +23,8 @@ import java.util.Optional;
 public interface ITbUserService extends IBaqiService<TbUserEntity> {
     Optional<TbUserEntity> getByAccount(String account);
 
+    Optional<TbUserEntity> getByAccountAndTenantId(String account, String tenantId);
+
     Object resetPassword(List<String> infos);
 
     Object changePassword(List<String> passwords);

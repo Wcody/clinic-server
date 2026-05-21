@@ -93,4 +93,8 @@ public class BqAdditionalFeeEntity extends BQIdBaseEntity {
      * 名称拼音首字母
      */
     private String pinyin;
+    /**
+     * [B]租户初始化数据
+     */
+    private Boolean tenantInitData;
 }

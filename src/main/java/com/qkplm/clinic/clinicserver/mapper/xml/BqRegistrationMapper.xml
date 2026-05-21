@@ -23,6 +23,8 @@
         <result property="status" column="status"/>
         <result property="patientId" column="patientId"/>
         <result property="age" column="age"/>
+        <result property="height" column="height"/>
+        <result property="weight" column="weight"/>
         <result property="statusFee" column="statusFee"/>
         <result property="deleted" column="deleted"/>
         <result property="createdTime" column="createdTime"/>
@@ -51,6 +53,8 @@
             r.gender,
             r.age,
             r.ageType,
+            r.height,
+            r.weight,
             p.idCard,
             p.mobile,
             p.address,
@@ -100,11 +104,11 @@
     <select id="selectVisitRecordList" resultMap="VisitRecordResultMap">
         SELECT
             r.id,
-            p.name AS patient,
-            p.gender,
-            p.firstAge,
-            p.lastAge,
-            p.ageType,
+            r.patient,
+            r.gender,
+            r.firstAge,
+            r.lastAge,
+            r.ageType,
             r.registrationNo,
             r.department,
             r.doctor,
@@ -117,6 +121,8 @@
             r.status,
             r.patientId,
             r.age,
+            r.height,
+            r.weight,
             r.statusFee,
             r.deleted,
             r.createdTime,
@@ -185,6 +191,8 @@
             r.status,
             r.patientId,
             r.age,
+            r.height,
+            r.weight,
             r.statusFee,
             r.deleted,
             r.createdTime,

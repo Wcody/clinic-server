@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Param;
 import com.qkplm.clinic.clinicserver.entity.TbUserEntity;
 import com.qkplm.clinic.libcommon.mybatis.base.IBaqiMapper;
 
@@ -39,4 +40,7 @@ public interface TbUserMapper extends IBaqiMapper<TbUserEntity> {
 
     @Select("select * from sel_user where account = #{account}")
     TbUserEntity selectByAccount(String account);
+
+    @Select("select * from sel_user where account = #{account} and tenantId = #{tenantId}")
+    TbUserEntity selectByAccountAndTenantId(@Param("account") String account, @Param("tenantId") String tenantId);
 }

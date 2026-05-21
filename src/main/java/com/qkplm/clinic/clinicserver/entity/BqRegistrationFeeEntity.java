@@ -88,4 +88,8 @@ public class BqRegistrationFeeEntity extends BQIdBaseEntity {
      * 删除时间
      */
     private LocalDateTime deletedTime;
+    /**
+     * [B]租户初始化数据
+     */
+    private Boolean tenantInitData;
 }

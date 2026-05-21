@@ -105,7 +105,9 @@ public class BQLoginController {
                     .remark(userDetails.getRemark())
                     .lid(userDetails.getRedisId())
                     .avatar(userDetails.getAvatar())
+                    .tenantLogo(userDetails.getTenantLogo())
                     .tenantName(userDetails.getTenantName())
+                    .tenantId(userDetails.getTenantId())
                     .build()
             );
         } finally {

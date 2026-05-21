@@ -111,7 +111,7 @@ public class TbRoleController {
     @BQLogMark(module = MODULE_NAME, operation = "删除")
     @RequestMapping(value = "/delete/{id}", method = RequestMethod.GET)
     public Boolean delete(@PathVariable String id) {
-        if (roleService.removePhysicalById(id)) {
+        if (!roleService.removePhysicalById(id)) {
             throw new BQApiException("删除失败，对象可能不存在");
         }
         return true;
@@ -137,7 +137,7 @@ public class TbRoleController {
     @BQLogMark(module = MODULE_NAME, operation = "删除")
     @RequestMapping(value = "/deleteLogic/{id}", method = RequestMethod.GET)
     public Boolean deleteLogic(@PathVariable String id) {
-        if (roleService.removeById(id)) {
+        if (!roleService.removeById(id)) {
             throw new BQApiException("删除失败，对象可能不存在");
         }
         return true;

@@ -14,6 +14,8 @@ import com.qkplm.clinic.clinicserver.entity.BqParamItemEntity;
 import com.qkplm.clinic.clinicserver.mapper.BqParamDataMapper;
 import com.qkplm.clinic.clinicserver.service.IBqParamDataService;
 import com.qkplm.clinic.libcommon.mybatis.base.BaqiServiceImpl;
+import com.qkplm.clinic.libcommon.security.BQSecurityUserDetails;
+import com.qkplm.clinic.libcommon.utils.BQJacksonUtils;
 import org.springframework.stereotype.Service;
 import com.qkplm.clinic.libcommon.utils.BQRequestContextHolderUtils;
 
@@ -34,7 +36,7 @@ public class BqParamDataServiceImpl extends BaqiServiceImpl<BqParamDataMapper, B
         }
         BqParamDataEntity paramData = getParamDataEntity(id, userId);
         if (paramData == null) {
-            return defaultValue;
+            return getTenantFallbackValue(id, defaultValue);
         } else {
             return paramData.getParamValue();
         }
@@ -53,6 +55,8 @@ public class BqParamDataServiceImpl extends BaqiServiceImpl<BqParamDataMapper, B
             defaultItem.setCreatedTime(paramData.getCreatedTime());
             defaultItem.setUpdatedBy(paramData.getUpdatedBy());
             defaultItem.setUpdatedTime(paramData.getUpdatedTime());
+        } else {
+            defaultItem.setParamValue(getTenantFallbackValue(id, defaultItem.getParamValue()));
         }
         return defaultItem;
     }
@@ -63,5 +67,24 @@ public class BqParamDataServiceImpl extends BaqiServiceImpl<BqParamDataMapper, B
         queryWrapper.eq(BqParamDataEntity::getParamId, paramId).eq(BqParamDataEntity::getUserId, userId);
         queryWrapper.eq(BqParamDataEntity::getTenantId, BQRequestContextHolderUtils.getUserDetails().getTenantId());
         return getOne(queryWrapper);
+    }
+
+    private ObjectNode getTenantFallbackValue(Integer id, ObjectNode defaultValue) {
+        if (Objects.equals(id, BqDataConst.TENANT_NAME_ID)) {
+            ObjectNode node = BQJacksonUtils.newObjectNode();
+            BQSecurityUserDetails userDetails = BQRequestContextHolderUtils.getUserDetails();
+            String tenantName = userDetails.getTenantName();
+            if (Objects.isNull(tenantName) || tenantName.isBlank()) {
+                tenantName = Objects.isNull(defaultValue) ? "" : defaultValue.path("value").asText("");
+            }
+            node.put("value", tenantName);
+            return node;
+        }
+        if (Objects.equals(id, BqDataConst.TENANT_LOGO_ID)) {
+            ObjectNode node = BQJacksonUtils.newObjectNode();
+            node.putArray("fileList");
+            return node;
+        }
+        return defaultValue;
     }
 }

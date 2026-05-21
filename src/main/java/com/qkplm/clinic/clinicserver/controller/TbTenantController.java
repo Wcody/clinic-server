@@ -17,6 +17,8 @@ import com.qkplm.clinic.libcommon.annotation.BQLogMark;
 import com.qkplm.clinic.libcommon.api.BQApiException;
 import com.qkplm.clinic.libcommon.api.BQSearchParams;
 import com.qkplm.clinic.libcommon.api.BQSearchParamsGet;
+import com.qkplm.clinic.libcommon.security.BQSecurityUserDetails;
+import com.qkplm.clinic.libcommon.utils.BQRequestContextHolderUtils;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -61,11 +63,7 @@ public class TbTenantController {
     @BQLogMark(module = MODULE_NAME, operation = "新增")
     @RequestMapping(value = "/save", method = RequestMethod.POST)
     public TbTenantEntity save(@RequestBody TbTenantEntity tenant) {
-        tenant.setEid(null);
-        if (!tenantService.save(tenant)) {
-            throw new BQApiException("新增失败");
-        }
-        return tenant;
+        return tenantService.createTenant(tenant);
     }
 
     /**
@@ -115,10 +113,7 @@ public class TbTenantController {
     @BQLogMark(module = MODULE_NAME, operation = "删除")
     @RequestMapping(value = "/delete/{id}", method = RequestMethod.GET)
     public Boolean delete(@PathVariable String id) {
-        if (tenantService.removePhysicalById(id)) {
-            throw new BQApiException("删除失败，对象可能不存在");
-        }
-        return true;
+        return tenantService.deleteTenant(id);
     }
 
     /**
@@ -128,10 +123,7 @@ public class TbTenantController {
     @BQLogMark(module = MODULE_NAME, operation = "批量删除")
     @RequestMapping(value = "/deleteBatch", method = RequestMethod.POST)
     public Boolean deleteBatch(@RequestBody Collection<Serializable> ids) {
-        if (!tenantService.removePhysicalBatchByIds(ids)) {
-            throw new BQApiException("批量删除失败");
-        }
-        return true;
+        return tenantService.deleteTenantBatch(ids);
     }
 
     /**
@@ -141,7 +133,7 @@ public class TbTenantController {
     @BQLogMark(module = MODULE_NAME, operation = "删除")
     @RequestMapping(value = "/deleteLogic/{id}", method = RequestMethod.GET)
     public Boolean deleteLogic(@PathVariable String id) {
-        if (tenantService.removeById(id)) {
+        if (!tenantService.removeById(id)) {
             throw new BQApiException("删除失败，对象可能不存在");
         }
         return true;
@@ -168,7 +160,7 @@ public class TbTenantController {
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     public Iterable<TbTenantEntity> list(BQSearchParamsGet<TbTenantEntity> paramsGet) {
         BQSearchParams<TbTenantEntity> params = paramsGet.toSearchParams();
-        return tenantService.list(params.toPage(), params.toWrapper());
+        return tenantService.listWithUsage(params.toPage(), params.toWrapper());
     }
 
     /**
@@ -179,7 +171,7 @@ public class TbTenantController {
     @RequestMapping(value = "/page", method = RequestMethod.GET)
     public Page<TbTenantEntity> page(BQSearchParamsGet<TbTenantEntity> paramsGet) {
         BQSearchParams<TbTenantEntity> params = paramsGet.toSearchParams();
-        return tenantService.page(params.toPage(), params.toWrapper());
+        return tenantService.pageWithUsage(params.toPage(), params.toWrapper());
     }
 
     /**
@@ -240,5 +232,23 @@ public class TbTenantController {
     @RequestMapping(value = "/getInfo", method = RequestMethod.GET)
     public Object getInfo() {
         return paramItemService.getTenantInfo();
+    }
+
+    /**
+     * 获取当前登录诊所授权信息
+     */
+    @BQAuthMark(tag = TAG_NAME, needGrant = false)
+    @BQLogMark(module = MODULE_NAME, operation = "获取当前登录诊所授权信息")
+    @RequestMapping(value = "/getAuthInfo", method = RequestMethod.GET)
+    public Object getAuthInfo() {
+        BQSecurityUserDetails userDetails = BQRequestContextHolderUtils.getUserDetails();
+        if (userDetails == null) {
+            throw new BQApiException("用户未登录");
+        }
+        TbTenantEntity tenant = tenantService.getByTenantId(userDetails.getTenantId());
+        if (tenant == null) {
+            throw new BQApiException("诊所不存在");
+        }
+        return tenant;
     }
 }
